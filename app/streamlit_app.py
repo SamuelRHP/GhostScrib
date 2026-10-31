@@ -216,57 +216,67 @@ def main():
 
     analyze_button = st.button("Generate Transparency Report", type="primary", use_container_width=True)
 
+    # Session state initialization to prevent report disappearance on download/rerun
+    if "current_report" not in st.session_state:
+        st.session_state.current_report = None
+    if "report_demo_mode" not in st.session_state:
+        st.session_state.report_demo_mode = False
+
     # Trigger analysis
-    if demo_mode or (uploaded_file and analyze_button):
-        report: Report | None = None
+    if demo_mode:
+        if st.session_state.current_report is None or not st.session_state.report_demo_mode:
+            st.session_state.current_report = run_pipeline(b"", "demo.txt", demo_mode=True)
+            st.session_state.report_demo_mode = True
+    elif uploaded_file and analyze_button:
+        with st.status("Analyzing manuscript across all forensic layers...", expanded=True) as status:
+            st.write("📄 **Layer 0:** Parsing document structure and isolating front matter...")
+            file_bytes = uploaded_file.getvalue()
 
-        if demo_mode:
-            report = run_pipeline(b"", "demo.txt", demo_mode=True)
-        else:
-            with st.status("Analyzing manuscript across all forensic layers...", expanded=True) as status:
-                st.write("📄 **Layer 0:** Parsing document structure and isolating front matter...")
-                file_bytes = uploaded_file.getvalue()
+            st.write("🤖 **Layer 1:** Querying local Lukkinen DeBERTa-v3 ensemble...")
+            st.write("📊 **Layer 1:** Computing syntactic traits and descriptive stylometry...")
 
-                st.write("🤖 **Layer 1:** Querying local Lukkinen DeBERTa-v3 ensemble...")
-                st.write("📊 **Layer 1:** Computing syntactic traits and descriptive stylometry...")
+            if run_attribution:
+                st.write("🔍 **Layer 2:** Evaluating TRACE-inspired token transitions...")
 
-                if run_attribution:
-                    st.write("🔍 **Layer 2:** Evaluating TRACE-inspired token transitions...")
+            if check_citations:
+                st.write("📚 **Layer 3:** Auditing bibliographic references via Crossref/OpenAlex...")
 
-                if check_citations:
-                    st.write("📚 **Layer 3:** Auditing bibliographic references via Crossref/OpenAlex...")
+            st.write("⚖️ **Layer 4:** Aggregating provenance bands and disclosure consistency...")
 
-                st.write("⚖️ **Layer 4:** Aggregating provenance bands and disclosure consistency...")
+            try:
+                report = run_pipeline(
+                    file_input=file_bytes,
+                    filename=uploaded_file.name,
+                    field=field,
+                    check_citations_online=check_citations,
+                    run_attribution=run_attribution,
+                    demo_mode=False,
+                )
+                # Override disclosure if user edited it
+                if disclosure_input.strip():
+                    report.document.disclosure_text = disclosure_input.strip()
+                    from ghostscrib.parsing.disclosure import classify_disclosure_statement
+                    from ghostscrib.provenance.disclosure import evaluate_disclosure_consistency
+                    stmt_class, _ = classify_disclosure_statement(disclosure_input)
+                    disc_res = evaluate_disclosure_consistency(stmt_class, report.transparency_report.document_band)
+                    report.disclosure = disc_res
+                    disc_map = {"consistent": "Consistent", "possible_mismatch": "Possible mismatch", "cannot_assess": "Cannot assess"}
+                    report.transparency_report.disclosure_consistency = disc_map.get(disc_res.consistency, "Cannot assess")
+                    report.transparency_report.disclosure_explanation = disc_res.explanation
 
-                try:
-                    report = run_pipeline(
-                        file_input=file_bytes,
-                        filename=uploaded_file.name,
-                        field=field,
-                        check_citations_online=check_citations,
-                        run_attribution=run_attribution,
-                        demo_mode=False,
-                    )
-                    # Override disclosure if user edited it
-                    if disclosure_input.strip():
-                        report.document.disclosure_text = disclosure_input.strip()
-                        from ghostscrib.parsing.disclosure import classify_disclosure_statement
-                        from ghostscrib.provenance.disclosure import evaluate_disclosure_consistency
-                        stmt_class, _ = classify_disclosure_statement(disclosure_input)
-                        disc_res = evaluate_disclosure_consistency(stmt_class, report.transparency_report.document_band)
-                        report.disclosure = disc_res
-                        disc_map = {"consistent": "Consistent", "possible_mismatch": "Possible mismatch", "cannot_assess": "Cannot assess"}
-                        report.transparency_report.disclosure_consistency = disc_map.get(disc_res.consistency, "Cannot assess")
-                        report.transparency_report.disclosure_explanation = disc_res.explanation
+                st.session_state.current_report = report
+                st.session_state.report_demo_mode = False
+                status.update(label="Analysis complete! Journal Transparency Report generated.", state="complete")
+            except Exception as e:
+                status.update(label=f"Analysis encountered an error: {e}", state="error")
+                st.error(f"Error processing manuscript: {e}")
+                return
+    elif not uploaded_file and not demo_mode:
+        st.session_state.current_report = None
+        st.session_state.report_demo_mode = False
 
-                    status.update(label="Analysis complete! Journal Transparency Report generated.", state="complete")
-                except Exception as e:
-                    status.update(label=f"Analysis encountered an error: {e}", state="error")
-                    st.error(f"Error processing manuscript: {e}")
-                    return
-
-        if report:
-            render_report(report, demo_mode=demo_mode)
+    if st.session_state.current_report is not None:
+        render_report(st.session_state.current_report, demo_mode=st.session_state.report_demo_mode)
 
 
 def render_report(report: Report, demo_mode: bool = False):
@@ -368,7 +378,7 @@ def render_report(report: Report, demo_mode: bool = False):
         )
 
         for sec in report.document.sections:
-            band_color = "red" if sec.band == "high" else ("orange" if sec.band == "medium" else "green")
+            band_color = "red" if sec.band == "high" else ("orange" if sec.band == "medium" else ("green" if sec.band == "low" else "gray"))
             with st.expander(f"**{sec.name}** — Band: :{band_color}[{sec.band.upper()}] ({sec.stats.assessed_words} assessed words)", expanded=True):
                 if sec.notes:
                     st.caption(f"_{sec.notes}_")

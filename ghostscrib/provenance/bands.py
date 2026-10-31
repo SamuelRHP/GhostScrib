@@ -70,16 +70,15 @@ def compute_document_band(sections: List[Section]) -> Tuple[DocBandType, int, in
         p for sec in sections for p in sec.paragraphs if p.label != "not_assessed"
     ]
     n_assessed = len(all_assessed_paras)
-
-    if n_assessed < settings.DOC_MIN_ASSESSED_PARAGRAPHS:
-        return "Insufficient text", 0, 0, 0, n_assessed
-
-    n_ai = sum(1 for p in all_assessed_paras if p.label == "ai")
-    frac_ai = n_ai / n_assessed
-
     assessed_words = sum(p.words for p in all_assessed_paras)
     ai_words = sum(p.words for p in all_assessed_paras if p.label == "ai")
     uncertain_words = sum(p.words for p in all_assessed_paras if p.label == "uncertain")
+
+    if n_assessed < settings.DOC_MIN_ASSESSED_PARAGRAPHS:
+        return "Insufficient text", assessed_words, ai_words, uncertain_words, n_assessed
+
+    n_ai = sum(1 for p in all_assessed_paras if p.label == "ai")
+    frac_ai = n_ai / n_assessed
 
     if n_ai >= settings.DOC_HIGH_MIN_AI and frac_ai >= settings.DOC_HIGH_MIN_SHARE:
         doc_band: DocBandType = "High"

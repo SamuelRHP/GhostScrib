@@ -14,9 +14,13 @@ accuracy benchmark.
 from __future__ import annotations
 
 import argparse
+import sys
 from pathlib import Path
 
 BASE_DIR = Path(__file__).resolve().parent.parent
+if str(BASE_DIR) not in sys.path:
+    sys.path.insert(0, str(BASE_DIR))
+
 SAMPLES_DIR = BASE_DIR / "data" / "samples"
 CATEGORIES = ["human", "ai", "mixed", "non_native", "other_field"]
 
@@ -25,9 +29,13 @@ from ghostscrib.pipeline import run_pipeline
 
 def main():
     parser = argparse.ArgumentParser(description="Evaluate sample papers for threshold tuning.")
+    parser.add_argument("--samples-dir", type=str, default=str(SAMPLES_DIR), help="Directory containing sample categories (default: data/samples)")
+    parser.add_argument("--format", choices=["markdown", "csv", "text"], default="markdown", help="Output format (markdown, csv, text)")
     parser.add_argument("--no-citations", action="store_true", help="Skip online citation check")
     parser.add_argument("--no-attribution", action="store_true", help="Skip attribution check")
     args = parser.parse_args()
+
+    samples_dir = Path(args.samples_dir)
 
     print("================================================================================")
     print("GhostScrib: Internal Sample Evaluation for Threshold Tuning")
@@ -36,13 +44,13 @@ def main():
     print("calibration. It does NOT represent a peer-reviewed scientific benchmark.")
     print("================================================================================\n")
 
-    if not SAMPLES_DIR.exists():
-        print(f"Samples directory {SAMPLES_DIR} does not exist. Please create sample folders.")
+    if not samples_dir.exists():
+        print(f"Samples directory {samples_dir} does not exist. Please create sample folders.")
         return
 
     results = []
     for cat in CATEGORIES:
-        cat_dir = SAMPLES_DIR / cat
+        cat_dir = samples_dir / cat
         if not cat_dir.exists():
             continue
 
@@ -83,17 +91,27 @@ def main():
                 print(f"      [ERROR] {e}")
 
     if not results:
-        print("\nNo sample files found in data/samples/{category} subfolders.")
-        print("Please place test papers into the respective folders as described in data/samples/README.md.")
+        print(f"\nNo sample files found in {samples_dir}/{{category}} subfolders.")
+        print(f"Please place test papers into the respective folders as described in {samples_dir}/README.md.")
         return
 
-    # Print markdown table
-    print("\n" + "=" * 90)
-    print(f"{'File':<25} {'Category':<12} {'Doc Band':<10} {'AI Range':<10} {'Confidence':<12} {'Disclosure':<18}")
-    print("-" * 90)
-    for r in results:
-        print(f"{r['file']:<25} {r['cat']:<12} {r['doc_band']:<10} {r['ai_range']:<10} {r['confidence']:<12} {r['disclosure']:<18}")
-    print("=" * 90 + "\n")
+    # Format output
+    if args.format == "csv":
+        import csv
+        import io
+        output = io.StringIO()
+        writer = csv.DictWriter(output, fieldnames=["file", "cat", "doc_band", "ai_range", "confidence", "disclosure", "sections"])
+        writer.writeheader()
+        writer.writerows(results)
+        print("\n" + output.getvalue())
+    else:
+        # Print markdown table
+        print("\n" + "=" * 90)
+        print(f"{'File':<25} {'Category':<12} {'Doc Band':<10} {'AI Range':<10} {'Confidence':<12} {'Disclosure':<18}")
+        print("-" * 90)
+        for r in results:
+            print(f"{r['file']:<25} {r['cat']:<12} {r['doc_band']:<10} {r['ai_range']:<10} {r['confidence']:<12} {r['disclosure']:<18}")
+        print("=" * 90 + "\n")
 
 
 if __name__ == "__main__":

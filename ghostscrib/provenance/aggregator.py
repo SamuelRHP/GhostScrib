@@ -55,6 +55,10 @@ def aggregate_report(
         document.sections
     )
 
+    # Re-evaluate stylometry agreement with true document band
+    from ghostscrib.stylometry.engine import compute_stylometry_agreement
+    stylometry.agreement = compute_stylometry_agreement(doc_band, stylometry.n_extreme_traits)
+
     # 3. Compute contribution ranges
     human_range, ai_range = compute_contribution_ranges(
         assessed_words, ai_words, uncertain_words

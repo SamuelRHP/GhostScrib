@@ -5,11 +5,17 @@ Falls back gracefully if ReportLab is not installed or encounters font/rendering
 
 from __future__ import annotations
 
+import html
 import io
 from pathlib import Path
 from typing import Optional, Union
 
 from ghostscrib.schema import Report
+
+
+def _esc(val: object) -> str:
+    """Escape text for ReportLab XML flowables."""
+    return html.escape(str(val))
 
 
 def export_report_to_pdf(report: Report, output_path: Union[Path, str] | None = None) -> Optional[bytes]:
@@ -93,7 +99,7 @@ def export_report_to_pdf(report: Report, output_path: Union[Path, str] | None = 
 
     # Banner
     tr = report.transparency_report
-    story.append(Paragraph(f"<b>NOTICE:</b> {tr.banner}", banner_style))
+    story.append(Paragraph(f"<b>NOTICE:</b> {_esc(tr.banner)}", banner_style))
     story.append(Spacer(1, 14))
 
     # Format KPI ranges
@@ -113,7 +119,7 @@ def export_report_to_pdf(report: Report, output_path: Union[Path, str] | None = 
         [
             Paragraph(h_str, kpi_val_style),
             Paragraph(a_str, kpi_val_style),
-            Paragraph(tr.provenance_confidence, kpi_val_style),
+            Paragraph(_esc(tr.provenance_confidence), kpi_val_style),
         ],
         [
             Paragraph("DISCLOSURE CONSISTENCY", kpi_title_style),
@@ -121,9 +127,9 @@ def export_report_to_pdf(report: Report, output_path: Union[Path, str] | None = 
             Paragraph("FLAGGED SECTIONS", kpi_title_style),
         ],
         [
-            Paragraph(tr.disclosure_consistency, kpi_val_style),
-            Paragraph(tr.citation_summary, kpi_val_style),
-            Paragraph(flagged_str, kpi_val_style),
+            Paragraph(_esc(tr.disclosure_consistency), kpi_val_style),
+            Paragraph(_esc(tr.citation_summary), kpi_val_style),
+            Paragraph(_esc(flagged_str), kpi_val_style),
         ],
     ]
 
@@ -145,11 +151,11 @@ def export_report_to_pdf(report: Report, output_path: Union[Path, str] | None = 
     # Confidence Analysis
     story.append(Paragraph("<b>Provenance Confidence Details:</b>", body_style))
     for r in tr.confidence_reasons:
-        story.append(Paragraph(f"• {r}", body_style))
+        story.append(Paragraph(f"• {_esc(r)}", body_style))
     story.append(Spacer(1, 10))
 
     # Disclosure
-    story.append(Paragraph(f"<b>Disclosure Statement Evaluation:</b> {tr.disclosure_explanation}", body_style))
+    story.append(Paragraph(f"<b>Disclosure Statement Evaluation:</b> {_esc(tr.disclosure_explanation)}", body_style))
     story.append(Spacer(1, 14))
 
     # Section Breakdown Table
@@ -184,7 +190,7 @@ def export_report_to_pdf(report: Report, output_path: Union[Path, str] | None = 
 
     # Footnote
     story.append(HRFlowable(width="100%", thickness=0.5, color=colors.HexColor("#94a3b8"), spaceAfter=6))
-    story.append(Paragraph(f"<i>{tr.footnote}</i>", subtitle_style))
+    story.append(Paragraph(f"<i>{_esc(tr.footnote)}</i>", subtitle_style))
 
     try:
         doc.build(story)

@@ -18,9 +18,12 @@ class ExtractionError(Exception):
 def extract_text_from_pdf(file_input: Union[bytes, Path, str]) -> str:
     """Extract text from PDF using PyMuPDF block sorting for multi-column academic text."""
     try:
-        import fitz  # PyMuPDF
+        import pymupdf as fitz
     except ImportError:
-        raise ExtractionError("PyMuPDF (fitz) is not installed. Please install pymupdf.")
+        try:
+            import fitz
+        except ImportError:
+            raise ExtractionError("PyMuPDF is not installed. Please install pymupdf.")
 
     if isinstance(file_input, (str, Path)):
         doc = fitz.open(str(file_input))

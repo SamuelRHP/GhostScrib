@@ -1,10 +1,12 @@
-"""Integration tests for real document formats (PDF, DOCX, TXT) via PyMuPDF and python-docx.
-"""
+"""Integration tests for real document formats (PDF, DOCX, TXT) via PyMuPDF and python-docx."""
 
 from __future__ import annotations
 
 from pathlib import Path
-import fitz  # PyMuPDF
+try:
+    import pymupdf as fitz
+except ImportError:
+    import fitz
 import docx  # python-docx
 import pytest
 
@@ -19,7 +21,11 @@ def test_pdf_parsing_and_structure(tmp_path: Path):
     page = doc.new_page()
 
     # Title & Front matter
-    page.insert_textbox(fitz.Rect(50, 50, 500, 100), "GhostScrib: Provenance Verification Framework\nSamuel et al.\n", fontsize=14)
+    page.insert_textbox(
+        fitz.Rect(50, 50, 500, 100),
+        "GhostScrib: Provenance Verification Framework\nSamuel et al.\n",
+        fontsize=14,
+    )
 
     # Abstract
     page.insert_textbox(
@@ -89,7 +95,9 @@ def test_docx_parsing_and_structure(tmp_path: Path):
     )
 
     doc.add_heading("Declaration of Generative AI", level=1)
-    doc.add_paragraph("The authors declare that no generative AI tools were used in writing this paper.")
+    doc.add_paragraph(
+        "The authors declare that no generative AI tools were used in writing this paper."
+    )
 
     doc.add_heading("References", level=1)
     doc.add_paragraph("[1] Vaswani et al. Attention is all you need. NeurIPS, 2017.")

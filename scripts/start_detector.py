@@ -20,6 +20,9 @@ import urllib.request
 from pathlib import Path
 
 BASE_DIR = Path(__file__).resolve().parent.parent
+if str(BASE_DIR) not in sys.path:
+    sys.path.insert(0, str(BASE_DIR))
+
 THIRD_PARTY_DIR = BASE_DIR / "third_party"
 DETECTOR_DIR = THIRD_PARTY_DIR / "ai-text-detector"
 PID_FILE = DETECTOR_DIR / "detector.pid"
@@ -83,16 +86,27 @@ def start_service(port: int = 8790, timeout: float = 60.0) -> bool:
 
     # Launch background process
     if platform.system() == "Windows":
-        # CREATE_NEW_PROCESS_GROUP = 0x00000200, DETACHED_PROCESS = 0x00000008
-        creationflags = subprocess.CREATE_NEW_PROCESS_GROUP | subprocess.DETACHED_PROCESS
-        proc = subprocess.Popen(
-            [str(python_exe), str(server_script)],
-            cwd=str(DETECTOR_DIR),
-            env=env,
-            creationflags=creationflags,
-            stdout=subprocess.DEVNULL,
-            stderr=subprocess.DEVNULL,
-        )
+        # Try breakaway from job if supported, fallback to standard detached process
+        flags = subprocess.CREATE_NEW_PROCESS_GROUP | subprocess.DETACHED_PROCESS
+        try:
+            breakaway_flags = flags | 0x01000000  # CREATE_BREAKAWAY_FROM_JOB
+            proc = subprocess.Popen(
+                [str(python_exe), str(server_script)],
+                cwd=str(DETECTOR_DIR),
+                env=env,
+                creationflags=breakaway_flags,
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+            )
+        except Exception:
+            proc = subprocess.Popen(
+                [str(python_exe), str(server_script)],
+                cwd=str(DETECTOR_DIR),
+                env=env,
+                creationflags=flags,
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+            )
     else:
         proc = subprocess.Popen(
             [str(python_exe), str(server_script)],
@@ -121,10 +135,12 @@ def start_service(port: int = 8790, timeout: float = 60.0) -> bool:
 
 def stop_service() -> bool:
     if not PID_FILE.exists():
-        print("No PID file found. Checking if port is still occupied...")
         if not is_service_healthy(DEFAULT_URL):
             print("Service is not running.")
             return True
+        print(f"[NOTE] Service is responding at {DEFAULT_URL} but no PID file was found.")
+        print("Please terminate the background server process from your task manager or terminal.")
+        return False
 
     try:
         pid = int(PID_FILE.read_text().strip())
@@ -155,14 +171,27 @@ def check_status() -> bool:
         return False
 
 
+def serve_service(port: int = 8790) -> None:
+    """Run the detector service in the foreground (useful for docker, services, and debugging)."""
+    server_script = DETECTOR_DIR / "server.py"
+    python_exe = get_venv_python()
+    env = os.environ.copy()
+    env["PYTHONUNBUFFERED"] = "1"
+    env["AIDET_PORT"] = str(port)
+    print(f"Running Lukkinen detector service in foreground on port {port}...")
+    subprocess.run([str(python_exe), str(server_script)], cwd=str(DETECTOR_DIR), env=env)
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description="Manage Lukkinen detector service.")
-    parser.add_argument("action", choices=["start", "stop", "status", "health"], help="Action to perform")
+    parser.add_argument("action", choices=["start", "stop", "status", "health", "serve"], help="Action to perform")
     parser.add_argument("--port", type=int, default=8790, help="Port to listen on (default 8790)")
     parser.add_argument("--timeout", type=float, default=60.0, help="Wait timeout in seconds")
     args = parser.parse_args()
 
-    if args.action == "start":
+    if args.action == "serve":
+        serve_service(port=args.port)
+    elif args.action == "start":
         success = start_service(port=args.port, timeout=args.timeout)
         sys.exit(0 if success else 1)
     elif args.action == "stop":
