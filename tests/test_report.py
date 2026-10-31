@@ -47,3 +47,4 @@ def test_pdf_export(sample_report: Report, tmp_path: Path):
     assert len(pdf_bytes) > 1000
     assert out_file.exists()
     assert pdf_bytes[:4] == b"%PDF"
+
