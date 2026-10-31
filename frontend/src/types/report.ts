@@ -146,6 +146,9 @@ export interface AssessmentStats {
   words_assessed: number;
   skipped_share: number;
   insufficient_text: boolean;
+  body_prose_words_total?: number;
+  body_prose_words_assessed?: number;
+  body_prose_skipped_share?: number;
 }
 
 export interface Report {

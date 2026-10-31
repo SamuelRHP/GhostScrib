@@ -423,6 +423,9 @@
     "words_total": 476,
     "words_assessed": 476,
     "skipped_share": 0.1111,
-    "insufficient_text": false
+    "insufficient_text": false,
+    "body_prose_words_total": 476,
+    "body_prose_words_assessed": 476,
+    "body_prose_skipped_share": 0.0
   }
 }

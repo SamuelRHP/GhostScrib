@@ -4,10 +4,21 @@
 from __future__ import annotations
 
 import io
+import re
 from pathlib import Path
 from typing import Union
 
 MAX_FILE_SIZE_BYTES = 20 * 1024 * 1024  # 20 MB
+
+BULLET_PREFIX_RE = re.compile(
+    r"^(?:"
+    r"[•⁃‣◦▪▫–—\*]\s*"
+    r"|-\s+"
+    r"|\(?\d+[\.\)]\s+"
+    r"|\(?[a-zA-Z][\.\)]\s+"
+    r"|\(?[ivxlcdmIVXLCDM]+[\.\)]\s+"
+    r")"
+)
 
 
 class ExtractionError(Exception):
@@ -81,7 +92,23 @@ def extract_text_from_docx(file_input: Union[bytes, Path, str]) -> str:
     else:
         doc = docx.Document(io.BytesIO(file_input))
 
-    paragraphs = [p.text for p in doc.paragraphs if p.text.strip()]
+    paragraphs = []
+    for p in doc.paragraphs:
+        t = p.text.strip()
+        if not t:
+            continue
+        is_heading_style = bool(p.style and p.style.name and p.style.name.startswith("Heading"))
+        is_list = (
+            not is_heading_style
+            and (
+                (p.style and p.style.name and p.style.name.startswith("List"))
+                or (p._p.pPr is not None and p._p.pPr.numPr is not None)
+            )
+        )
+        if is_list and not BULLET_PREFIX_RE.match(t):
+            t = f"• {t}"
+        paragraphs.append(t)
+
     if not paragraphs:
         raise ExtractionError("DOCX file contains no readable text paragraphs.")
 

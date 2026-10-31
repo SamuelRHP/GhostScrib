@@ -18,6 +18,7 @@ def calculate_provenance_confidence(
     assessed_words: int,
     total_paragraphs: int,
     unassessed_paragraphs: int,
+    body_prose_skipped_share: Optional[float] = None,
 ) -> Tuple[ConfidenceLevel, List[str]]:
     """Compute confidence score (-1 / 0 / +1 -> Low / Medium / High) and reasons.
 
@@ -29,7 +30,7 @@ def calculate_provenance_confidence(
     - 0 if attribution is unavailable (state in reasons)
     - -1 if field is not 'cs_eng'
     - -1 if assessed words < 1,500
-    - -1 if > 40% of paragraphs are not_assessed
+    - -1 if > 40% of body-prose words (or paragraphs) are excluded
     """
     score = 0
     reasons: List[str] = []
@@ -87,8 +88,14 @@ def calculate_provenance_confidence(
         score -= 1
         reasons.append(f"Assessed volume is under {settings.CONFIDENCE_MIN_ASSESSED_WORDS:,} words ({assessed_words:,} words assessed).")
 
-    # 5. Proportion of unassessed paragraphs
-    if total_paragraphs > 0:
+    # 5. Proportion of unassessed body prose (or paragraphs fallback)
+    if body_prose_skipped_share is not None:
+        if body_prose_skipped_share > settings.CONFIDENCE_MAX_UNASSESSED_SHARE:
+            score -= 1
+            reasons.append(
+                f"More than {int(settings.CONFIDENCE_MAX_UNASSESSED_SHARE * 100)}% of body-prose words were excluded from assessment ({int(body_prose_skipped_share * 100)}% skipped)."
+            )
+    elif total_paragraphs > 0:
         unassessed_share = unassessed_paragraphs / total_paragraphs
         if unassessed_share > settings.CONFIDENCE_MAX_UNASSESSED_SHARE:
             score -= 1

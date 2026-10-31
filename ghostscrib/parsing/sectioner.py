@@ -18,7 +18,7 @@ HEADING_PATTERNS = [
     r"literature review",
     r"methods?",
     r"methodology",
-    r"proposed (?:approach|method|framework|model|system)",
+    r"proposed (?:.* )?(?:approach|method|framework|model|system)",
     r"system model",
     r"architecture",
     r"implementation",
@@ -27,13 +27,76 @@ HEADING_PATTERNS = [
     r"results?(?:.*)?",
     r"evaluation",
     r"discussion",
-    r"conclusion(?:s)?(?: and future work)?",
+    r"conclusion(?:s)?(?: and future (?:work|scope|directions?))?",
     r"analysis(?:.*)?",
     r"bus contention",
     r"real-world link(?:.*)?",
     r"reflection(?:.*)?",
     r"observations?",
+    r"research gap(?: and contributions)?",
 ]
+
+TERMINAL_PUNCT = {'.', '!', '?', ':', ';', ']', ')', '"', "'", '”', '’', '»'}
+
+BULLET_PREFIX_RE = re.compile(
+    r"^(?:"
+    r"[•⁃‣◦▪▫–—\*]\s*"
+    r"|-\s+"
+    r"|\(?\d+[\.\)]\s+"
+    r"|\(?[a-zA-Z][\.\)]\s+"
+    r"|\(?[ivxlcdmIVXLCDM]+[\.\)]\s+"
+    r")"
+)
+
+
+def merge_sentence_fragments(paras: List[str]) -> List[str]:
+    """Merge paragraph fragments split mid-sentence.
+    
+    When a paragraph does not end with terminal punctuation (. ! ? : ; ] ) or
+    closing quote) and the next starts with a lowercase letter, join them before scoring.
+    """
+    if not paras:
+        return []
+    merged: List[str] = [paras[0]]
+    for p in paras[1:]:
+        prev = merged[-1].strip()
+        curr = p.strip()
+        if prev and curr and (prev[-1] not in TERMINAL_PUNCT) and curr[0].islower():
+            if prev.endswith("-") and len(prev) >= 2 and prev[-2].isalpha():
+                merged[-1] = prev[:-1] + curr
+            else:
+                merged[-1] = prev + " " + curr
+        else:
+            merged.append(p)
+    return merged
+
+
+def merge_consecutive_list_items(paras: List[str]) -> List[str]:
+    """Merge consecutive list items (bullets) in the same list into one block before scoring."""
+    if not paras:
+        return []
+    merged: List[str] = []
+    current_list: List[str] = []
+
+    def flush_list():
+        nonlocal current_list
+        if not current_list:
+            return
+        if len(current_list) == 1:
+            merged.append(current_list[0])
+        else:
+            merged.append(" ".join(current_list))
+        current_list = []
+
+    for p in paras:
+        if BULLET_PREFIX_RE.match(p.strip()):
+            current_list.append(p.strip())
+        else:
+            flush_list()
+            merged.append(p)
+    flush_list()
+    return merged
+
 
 # Major hierarchical headings: e.g. 'Task 1 — ...', 'Part 2', 'Chapter 3'
 MAJOR_HEADING_RE = re.compile(
@@ -49,14 +112,52 @@ SUB_HEADING_RE = re.compile(
 
 
 def classify_non_prose(text: str) -> Optional[str]:
-    """Check if a paragraph is non-prose (code, assembly, formula, table, or metadata)
-    and return an explanatory reason string, or None if it appears to be assessable prose.
+    """Check if a paragraph is non-prose (code, assembly, formula, equation fragment,
+    heading, table, or metadata) and return an explanatory reason string, or None
+    if it appears to be assessable prose.
     """
     lines = [line.strip() for line in text.split("\n") if line.strip()]
     if not lines:
         return "empty paragraph"
 
-    # 1. Code / Assembly directives, labels, and opcodes
+    t = text.strip()
+
+    # 0. Front-matter metadata & editorial declarations
+    if re.match(r"^(?:Keywords|Index Terms|Key words)\b", t, re.IGNORECASE):
+        return "front matter / metadata (keywords)"
+    if re.match(r"^(?:Copyright|©|\(c\))\b", t, re.IGNORECASE):
+        return "front matter / metadata (copyright)"
+    if re.match(r"^Graphical Abstract\b", t, re.IGNORECASE):
+        return "front matter / metadata (graphical abstract)"
+    if re.match(r"^(?:Acknowledgements|Funding Source|Author's Contribution|Conflict of Interest|Data Availability)\b", t, re.IGNORECASE):
+        return "editorial / declaration metadata"
+
+    # 1. Equation fragments (isolated variables, bare formulas, equation numbers)
+    words = t.split()
+    if re.match(r"^\(?\d+[\.\d]*\)?$", t) and len(words) <= 2:
+        return "equation fragment"
+    if re.match(r"^[\w\s\(\)\.,\?\u00a0\U00010000-\U0010ffff\u0370-\u03ff]+=\s*$", t):
+        return "equation fragment"
+    if len(words) <= 2:
+        if re.match(r"^[a-zA-Z\U00010000-\U0010ffff\u0370-\u03ff](?:\s*=\s*\d+)?$", t):
+            return "equation fragment"
+        if all(c in "=+-*/^<>()[]{}|0123456789 \t\r\n\U00010000-\U0010ffff\u0370-\u03ff∑∏√∫≈≠≤≥" for c in t):
+            return "equation fragment"
+    if len(words) <= 8 and ("=" in t) and re.search(r"\(\d+\)\s*$", t):
+        return "equation fragment"
+
+    # 2. Section or subsection heading within section text
+    if 1 <= len(words) <= 6 and 2 <= len(t) <= 60 and (t[-1] not in {'.', '!', '?', ';', ':', ',', ']', ')'}):
+        is_title_case = all(
+            w[0].isupper() for w in words
+            if w.lower() not in {"and", "or", "the", "of", "in", "for", "to", "a", "an", "on", "with", "by", "from", "at"}
+        )
+        is_upper = t.isupper() and len(words) >= 1 and len(t) >= 2
+        is_numbered = bool(re.match(r"^(?:\d+\.|\d+\.\d+|[IVXLCDM]+\.)\s+[A-Z]", t))
+        if is_title_case or is_upper or is_numbered:
+            return "section / subsection heading"
+
+    # 3. Code / Assembly directives, labels, and opcodes
     asm_directives = sum(1 for line in lines if line.startswith("."))
     asm_labels = sum(1 for line in lines if re.match(r"^[a-zA-Z0-9_]+:\s*$", line))
     asm_comments = sum(1 for line in lines if "@" in line or (line.startswith("#") and not line.startswith("# ")))
@@ -196,6 +297,12 @@ def build_paragraphs_from_text(section_name: str, text: str, is_front_matter: bo
     Only the detector assigns an assessed label ('ai', 'uncertain', 'human') with a score.
     """
     raw_paras = [p.strip() for p in re.split(r"\n\s*\n", text) if p.strip()]
+    if not is_front_matter:
+        # Merge sentence fragments split mid-sentence (Req 3)
+        raw_paras = merge_sentence_fragments(raw_paras)
+        # Merge consecutive list items (Req 5)
+        raw_paras = merge_consecutive_list_items(raw_paras)
+
     paragraphs: List[Paragraph] = []
 
     for p in raw_paras:
@@ -232,13 +339,39 @@ def build_paragraphs_from_text(section_name: str, text: str, is_front_matter: bo
 def create_section_models(front_matter: str, raw_sections: List[Tuple[str, str]]) -> List[Section]:
     """Construct full Section objects with Front matter preceding body sections.
     
+    Treats Abstract as assessable body prose (Req 4).
     Assigns a unique id (e.g. sec_1, sec_2) and preserves unique section names.
     """
     sections: List[Section] = []
     sec_counter = 1
 
-    if front_matter:
-        fm_paras = build_paragraphs_from_text("Front matter", front_matter, is_front_matter=True)
+    has_abstract_section = any(name.strip().lower() == "abstract" for name, _ in raw_sections)
+    abstract_paras_text: List[str] = []
+    fm_paras_text: List[str] = []
+
+    if front_matter and not has_abstract_section:
+        raw_fm = [p.strip() for p in re.split(r"\n\s*\n", front_matter) if p.strip()]
+        in_abstract = False
+        for p in raw_fm:
+            if re.match(r"^(?:Abstract)\b", p, re.IGNORECASE):
+                clean_p = re.sub(r"^(?:Abstract)\b\s*[:—–-]?\s*", "", p, flags=re.IGNORECASE).strip()
+                if clean_p:
+                    abstract_paras_text.append(clean_p)
+                in_abstract = True
+            elif in_abstract:
+                if re.match(r"^(?:Keywords|Index Terms|Key words|Graphical Abstract)\b", p, re.IGNORECASE):
+                    in_abstract = False
+                    fm_paras_text.append(p)
+                else:
+                    abstract_paras_text.append(p)
+            else:
+                fm_paras_text.append(p)
+    elif front_matter:
+        fm_paras_text = [p.strip() for p in re.split(r"\n\s*\n", front_matter) if p.strip()]
+
+    if fm_paras_text:
+        fm_body = "\n\n".join(fm_paras_text)
+        fm_paras = build_paragraphs_from_text("Front matter", fm_body, is_front_matter=True)
         sections.append(
             Section(
                 id=f"sec_{sec_counter}",
@@ -247,6 +380,20 @@ def create_section_models(front_matter: str, raw_sections: List[Tuple[str, str]]
                 band="not_assessed",
                 stats=SectionStats(),
                 notes="Author and metadata block; excluded from assessment.",
+            )
+        )
+        sec_counter += 1
+
+    if abstract_paras_text:
+        abs_body = "\n\n".join(abstract_paras_text)
+        abs_paras = build_paragraphs_from_text("Abstract", abs_body, is_front_matter=False)
+        sections.append(
+            Section(
+                id=f"sec_{sec_counter}",
+                name="Abstract",
+                paragraphs=abs_paras,
+                band="not_assessed",
+                stats=SectionStats(),
             )
         )
         sec_counter += 1

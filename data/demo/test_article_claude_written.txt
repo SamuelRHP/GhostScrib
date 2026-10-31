@@ -1,0 +1,103 @@
+Adaptive Request Batching for Latency-Sensitive Neural Network Inference on Shared GPUs
+
+Abstract
+
+Serving neural network models in production requires balancing two competing goals: high hardware utilization and low tail latency. Batching requests improves throughput because accelerators execute large matrix operations more efficiently than many small ones, but waiting to form a batch adds delay that can violate latency targets. This paper presents an adaptive batching policy that adjusts the batch window at runtime according to the observed arrival rate, the current queue depth, and a per-model latency budget. The policy requires no offline profiling and can be deployed alongside existing serving frameworks with minimal changes. We evaluate the approach on a shared GPU cluster serving image classification, speech recognition, and text ranking workloads under bursty traffic. Compared with a fixed batching baseline, the adaptive policy reduces 99th percentile latency by a substantial margin while preserving most of the throughput gains of large batches. We also analyze the conditions under which the policy performs poorly and discuss directions for future work.
+
+1. Introduction
+
+Machine learning models are now embedded in many interactive services, including search, recommendation, translation, and voice assistants. Each of these services receives a continuous stream of user requests, and each request must be answered within a strict time limit, often a few tens of milliseconds. At the same time, the accelerators that run these models are expensive, and operators are under pressure to keep them as busy as possible. This tension between responsiveness and efficiency is one of the central engineering problems in modern inference serving.
+
+Batching is the most common technique for improving accelerator efficiency. A graphics processing unit can process a batch of thirty-two inputs in only slightly more time than a single input, because the extra inputs fill compute units that would otherwise sit idle. However, forming a batch requires waiting for enough requests to arrive. If the system waits too long, the earliest request in the batch suffers added delay. If it waits too little, batches stay small and the hardware is underused. The right amount of waiting depends on the traffic pattern, which changes throughout the day and can shift within seconds during a traffic burst.
+
+Most deployed systems address this problem with a fixed batch size and a fixed timeout, chosen by an engineer after experiments on representative traffic. This approach is simple and predictable, but it has clear weaknesses. A configuration tuned for peak load wastes latency budget during quiet periods, because requests wait for a batch that is slow to fill. A configuration tuned for quiet periods produces small batches at peak load and leaves capacity unused. Because many models often share the same GPU, the best setting for one model also depends on what its neighbors are doing, which makes manual tuning difficult to maintain.
+
+In this paper we propose an adaptive batching policy that removes the need for fixed parameters. The policy observes the arrival rate and the queue depth, estimates how much of each request's latency budget remains, and closes the batch as soon as waiting longer would put the earliest request at risk. We make three contributions. First, we formulate batch closing as a deadline-driven decision and derive a simple rule that can be evaluated in constant time per request. Second, we describe an implementation that integrates with existing serving frameworks without modifying model code. Third, we present an evaluation on three workloads showing that the policy lowers tail latency while retaining most of the throughput benefit of batching.
+
+2. Related Work
+
+Inference serving has received considerable attention from both the systems and machine learning communities. Early work focused on building general-purpose prediction services that hide model-specific details behind a common interface and use batching and caching to meet latency goals. These systems demonstrated that adaptive techniques could improve tail latency, and they established the basic architecture of a queue in front of a pool of model replicas that we also adopt here.
+
+A second line of research studies tail latency in large distributed systems. It has long been recognized that the slowest few percent of requests dominate the experience of users when a single page view fans out to many backend calls. Techniques such as hedged requests, tied requests, and careful queue management reduce this tail effect. Our work is related in spirit, but it focuses on a single stage of the pipeline, namely the decision of when to close a batch on a shared accelerator.
+
+A third body of work concerns scheduling on shared GPUs. Some systems partition the device in space, assigning fixed fractions of the compute units to each model, while others multiplex the device in time and switch between models at a fine granularity. Spatial partitioning gives predictable performance but wastes capacity when a partition is idle. Time multiplexing uses the device more fully but introduces interference between models. Our policy is compatible with either approach, since it operates on the request queues rather than on the device itself.
+
+Finally, there is growing interest in learned scheduling policies that use reinforcement learning to choose batch sizes. These methods can discover effective strategies, but they require training data, add operational complexity, and can behave unpredictably when traffic differs from what was seen during training. We instead use a transparent rule with a small number of interpretable inputs, which makes the behavior easier to reason about and to debug in production.
+
+3. Method
+
+3.1 Problem Setting
+
+We consider a single model replica that receives requests from a shared queue. Each request carries an arrival time and a latency budget, which is the maximum time the service is allowed to take from arrival to response. The replica processes requests in batches. The time to execute a batch depends on the batch size, and we assume this dependence is monotonic and approximately linear over the range of interest, with a fixed overhead and a per-request cost that is smaller than the cost of running requests individually. The policy must decide, at every moment, whether to close the current batch and dispatch it or to keep waiting for additional requests.
+
+3.2 Deadline-Driven Batch Closing
+
+The central idea is that a batch should be closed at the latest moment that still allows the earliest request to meet its budget. For each request in the queue, we compute its slack, defined as the remaining budget minus the estimated execution time of the batch if it were dispatched now. The earliest-deadline request determines the minimum slack across the queue. When this minimum slack falls below a safety margin, the batch is closed immediately. When the batch reaches the maximum size supported by the model, it is also closed. Otherwise the policy continues to wait, because additional requests can still be absorbed without risking a deadline.
+
+The execution time estimate is maintained as a running average of recent batch durations for each batch size, smoothed with an exponential filter. This estimate adapts as the workload changes and as other models on the same device cause interference. The safety margin is set to a small multiple of the recent variation in execution time, so that noisier workloads receive a larger margin automatically. Because the rule uses only the queue contents and a handful of running statistics, it can be evaluated in constant time for each arriving request.
+
+3.3 Adapting to Load
+
+Under light load, the queue rarely contains more than one request, and the slack of that request shrinks steadily while the policy waits. The policy therefore dispatches small batches quickly, which keeps latency close to the cost of running a single request. Under heavy load, requests arrive faster than the replica can process them, and the queue grows. In this regime the policy fills batches up to the maximum size before slack becomes a concern, which maximizes throughput. The transition between these two regimes happens automatically, without any explicit load detection, because slack and queue depth already encode the relevant information.
+
+3.4 Implementation
+
+We implemented the policy as a plug-in scheduler for an open-source serving framework. The plug-in intercepts the queue interface and replaces the default batching logic, leaving the model execution path unchanged. Per-model latency budgets are supplied through the existing configuration mechanism, and the running statistics are stored in a small shared structure that is updated after every batch. The added overhead per request is a few microseconds, which is negligible compared with model execution times measured in milliseconds.
+
+4. Experimental Setup
+
+We evaluated the policy on a cluster of four servers, each equipped with a single data-center GPU, and we ran experiments with up to three models sharing each device. The workloads were an image classification network, a speech recognition model, and a text ranking model, chosen to represent different input sizes and execution times. The image model has the shortest execution time, the ranking model is intermediate, and the speech model is the slowest and benefits most from batching.
+
+Request traffic was generated from two sources. The first was a synthetic generator that produces Poisson arrivals with a configurable mean rate, which we used to study steady load. The second was a replay of arrival patterns derived from a production service, which contain bursts lasting several seconds and strong variation over the course of an hour. Each experiment ran for thirty minutes after a warm-up period, and every configuration was repeated five times to account for run-to-run variation.
+
+We compared the adaptive policy against three baselines. The first uses a fixed batch size of eight with a short timeout. The second uses a fixed batch size of thirty-two with a longer timeout. The third is a no-batching configuration that processes each request individually. For each configuration we report throughput, median latency, and 99th percentile latency, and we count the fraction of requests that exceeded their latency budget.
+
+5. Results
+
+5.1 Steady Load
+
+Under steady Poisson traffic at moderate load, the adaptive policy achieved latency close to the no-batching baseline while delivering throughput close to the large fixed batch configuration. The large fixed batch configuration reached the highest throughput, but its median latency was noticeably higher because requests waited for the long timeout when traffic was light. The small fixed batch configuration had lower latency than the large one but failed to reach the same throughput at higher load. The adaptive policy avoided both of these weaknesses, because it dispatched quickly when the queue was short and formed large batches only when many requests were waiting.
+
+5.2 Bursty Traffic
+
+The advantages were more pronounced under the replayed production traffic. During bursts, the large fixed configuration absorbed the extra load efficiently, but the small fixed configuration built long queues and produced a heavy tail. The adaptive policy reduced the 99th percentile latency relative to both fixed configurations and cut the fraction of requests that exceeded their budget substantially. The improvement was largest for the speech recognition model, whose long execution time makes poor batching decisions especially costly.
+
+5.3 Shared Device Interference
+
+When three models shared a device, execution times became more variable because the models competed for compute units and memory bandwidth. The fixed configurations suffered from this variability, since their parameters had been tuned for an isolated model. The adaptive policy tracked the changing execution times through its running estimates and widened its safety margin when variation increased. As a result, its latency degradation under sharing was smaller than that of the fixed baselines, although all configurations were slower than in the isolated case.
+
+5.4 Sensitivity Analysis
+
+We examined how sensitive the policy is to its two main internal parameters, the smoothing factor of the execution time estimate and the multiplier used for the safety margin. Performance was stable across a wide range of smoothing values, and only extreme settings that react too slowly to workload changes caused noticeable degradation. The safety margin multiplier presented a clearer trade-off: smaller values increased throughput slightly but raised the fraction of requests that missed their deadline, while larger values were more conservative. We used a moderate default in all reported experiments.
+
+6. Discussion
+
+The results suggest that a simple deadline-driven rule captures most of the benefit of more complex batching strategies. The key observation is that the latency budget of the earliest request is a natural control signal, because it connects the batching decision directly to the service objective. Fixed parameters ignore this signal and therefore encode assumptions about traffic that may not hold. By contrast, the adaptive rule responds to the actual state of the queue and does not need to be retuned when the workload changes.
+
+Operationally, the policy reduces the amount of manual configuration needed to deploy a new model. Engineers specify the latency budget, which is a requirement they already know, rather than guessing batch sizes and timeouts. This is likely to be most valuable in environments with many models and frequent releases, where tuning every combination by hand is impractical. We also found the transparency of the rule useful during debugging, since every dispatch decision can be explained by pointing to the slack of a specific request.
+
+There are, however, cases in which the policy offers little advantage. If the execution time of a batch is nearly independent of its size, as happens for very small models on large devices, batching provides little benefit and the policy reduces to dispatching immediately. If the latency budgets are very generous compared with execution time, the policy forms large batches almost all the time and behaves like a large fixed configuration. The approach is most useful in the intermediate regime where budgets and execution times are of similar magnitude.
+
+7. Limitations
+
+Our study has several limitations. The execution time model assumes a roughly linear relationship between batch size and duration, which holds for the models we tested but may not hold for architectures with irregular compute patterns or dynamic input shapes. The evaluation used a single GPU model and a small cluster, so we cannot claim that the results transfer to other hardware generations or to large-scale deployments. In addition, our traffic replay came from one production service, and other services may exhibit different burst structures.
+
+The policy also treats all requests as equally important and does not distinguish between priority classes. In practice, services often combine interactive and background traffic, and a more complete solution would reserve capacity for the former. Finally, we did not study failure scenarios such as sudden device slowdowns or model replica crashes, in which the running estimates could become inaccurate for a short period.
+
+8. Conclusion
+
+We presented an adaptive batching policy for latency-sensitive inference serving that closes each batch at the latest moment consistent with the earliest request's latency budget. The policy uses only the queue contents and a few running statistics, adds negligible overhead, and integrates with existing serving frameworks. Experiments on three workloads showed that it lowers tail latency compared with fixed batching while retaining most of the throughput advantage, especially under bursty traffic and device sharing. Future work includes supporting priority classes, extending the execution time model to dynamic input shapes, and evaluating the policy at larger scale.
+
+References
+
+[1] A. Vaswani, N. Shazeer, N. Parmar, J. Uszkoreit, L. Jones, A. N. Gomez, L. Kaiser, and I. Polosukhin, "Attention Is All You Need," in Advances in Neural Information Processing Systems 30, 2017.
+
+[2] J. Dean and L. A. Barroso, "The Tail at Scale," Communications of the ACM, vol. 56, no. 2, 2013.
+
+[3] D. Crankshaw, X. Wang, G. Zhou, M. J. Franklin, J. E. Gonzalez, and I. Stoica, "Clipper: A Low-Latency Online Prediction Serving System," in Proceedings of the 14th USENIX Symposium on Networked Systems Design and Implementation, 2017.
+
+[4] R. Whitfield and S. Okonkwo, "Deadline-Aware Request Coalescing for Shared Accelerator Pools," Journal of Cloud Inference Systems, vol. 7, no. 3, 2021.
+
+[5] L. Hartmann and P. Desai, "Slack-Based Scheduling for Multi-Tenant Neural Network Serving," in Proceedings of the International Conference on Adaptive Serving Systems, 2022.
+
+[6] M. Tanaka, J. Alvarez, and K. Brennan, "Learning Batch Policies for Interference-Prone GPU Clusters," IEEE Transactions on Elastic Computing, vol. 4, no. 1, 2020.
