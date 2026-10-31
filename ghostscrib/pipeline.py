@@ -14,7 +14,7 @@ from __future__ import annotations
 import json
 import logging
 from pathlib import Path
-from typing import Literal, Optional, Union
+from typing import Callable, Literal, Optional, Union
 
 from ghostscrib.attribution.classifier import attribute_document
 from ghostscrib.config import settings
@@ -90,10 +90,12 @@ def run_pipeline(
     file_input: Union[bytes, Path, str],
     filename: Optional[str] = None,
     field: Literal["cs_eng", "other"] = "cs_eng",
+    check_citations: bool = True,
     check_citations_online: bool = True,
     run_attribution: bool = True,
     demo_mode: bool = False,
     detector_client: Optional[LukkinenClient] = None,
+    progress: Optional[Callable[[str, str], None]] = None,
 ) -> Report:
     """Execute the full GhostScrib analysis pipeline."""
     if not filename:
@@ -110,7 +112,11 @@ def run_pipeline(
             return Report(**data)
 
     # 1. Layer 0: Parsing
+    if progress:
+        progress("parsing", "running")
     parsed_doc = parse_document(file_input, filename=filename, field=field)
+    if progress:
+        progress("parsing", "done")
 
     # Extract all body text (excluding Front matter) for detection
     body_paragraphs = [
@@ -123,6 +129,8 @@ def run_pipeline(
     full_body_text = "\n\n".join(body_paragraphs)
 
     # 2. Layer 1: Primary Detection (Lukkinen)
+    if progress:
+        progress("detection", "running")
     client = detector_client or LukkinenClient()
     detector_verdict = None
     structure_traits = []
@@ -136,8 +144,12 @@ def run_pipeline(
     except (DetectorUnavailableError, DetectorError) as e:
         logger.warning(f"Lukkinen detector unavailable or failed: {e}")
         parsed_doc.parse_warnings.append(f"Primary detector notice: {e}")
+    if progress:
+        progress("detection", "done")
 
     # 3. Layer 1: Stylometry
+    if progress:
+        progress("stylometry", "running")
     section_texts = {
         s.name: "\n\n".join(p.text for p in s.paragraphs)
         for s in parsed_doc.sections
@@ -154,11 +166,27 @@ def run_pipeline(
         doc_band=temp_band,
         section_texts=section_texts,
     )
+    if progress:
+        progress("stylometry", "done")
 
     # 4. Layer 2: Attribution (Experimental)
-    if run_attribution and full_body_text.strip():
-        attribution_result = attribute_document(full_body_text)
+    if run_attribution:
+        if progress:
+            progress("attribution", "running")
+        if full_body_text.strip():
+            attribution_result = attribute_document(full_body_text)
+        else:
+            attribution_result = AttributionResult(
+                status="unavailable",
+                reason="Document contains no body text for attribution analysis.",
+                method="TRACE-inspired",
+                experimental=True,
+            )
+        if progress:
+            progress("attribution", "done")
     else:
+        if progress:
+            progress("attribution", "skipped")
         attribution_result = AttributionResult(
             status="unavailable",
             reason="Attribution check was disabled by user configuration.",
@@ -167,14 +195,28 @@ def run_pipeline(
         )
 
     # 5. Layer 3: Citation Integrity
-    verifier = CitationVerifier()
-    citation_result = verifier.verify_references(
-        references=parsed_doc.references,
-        body_text=full_body_text,
-        online=check_citations_online,
-    )
+    if check_citations:
+        if progress:
+            progress("citations", "running")
+        verifier = CitationVerifier()
+        citation_result = verifier.verify_references(
+            references=parsed_doc.references,
+            body_text=full_body_text,
+            online=check_citations_online,
+        )
+        if progress:
+            progress("citations", "done")
+    else:
+        if progress:
+            progress("citations", "skipped")
+        citation_result = CitationResult(
+            total=len(parsed_doc.references),
+            not_checked=len(parsed_doc.references),
+        )
 
     # 6. Layer 4 & 5: Provenance Aggregation & Report Generation
+    if progress:
+        progress("scoring", "running")
     report = aggregate_report(
         document=parsed_doc,
         stylometry=stylometry_signal,
@@ -182,6 +224,13 @@ def run_pipeline(
         citation_integrity=citation_result,
         detector_reference_verdict=detector_verdict,
     )
+    if progress:
+        progress("scoring", "done")
 
     return report
+
+
+# Module alias for pipeline invocation
+run = run_pipeline
+
 

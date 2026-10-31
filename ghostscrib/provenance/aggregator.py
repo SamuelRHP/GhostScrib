@@ -13,6 +13,7 @@ from ghostscrib.provenance.bands import (
 from ghostscrib.provenance.confidence import calculate_provenance_confidence
 from ghostscrib.provenance.disclosure import evaluate_disclosure_consistency
 from ghostscrib.schema import (
+    AssessmentStats,
     AttributionResult,
     CitationResult,
     JournalTransparencyReport,
@@ -130,6 +131,20 @@ def aggregate_report(
     if limitations:
         default_limitations.extend(limitations)
 
+    assessed_paras = total_paras - unassessed_paras
+    skipped_share = round(unassessed_paras / total_paras, 4) if total_paras > 0 else 0.0
+    insufficient_text = assessed_paras < 3
+
+    assessment = AssessmentStats(
+        paragraphs_total=total_paras,
+        paragraphs_assessed=assessed_paras,
+        paragraphs_skipped=unassessed_paras,
+        words_total=document.n_words,
+        words_assessed=assessed_words,
+        skipped_share=skipped_share,
+        insufficient_text=insufficient_text,
+    )
+
     return Report(
         document=document,
         transparency_report=transparency_report,
@@ -139,5 +154,6 @@ def aggregate_report(
         disclosure=disclosure_res,
         detector_reference_verdict=detector_reference_verdict,
         limitations=default_limitations,
+        assessment=assessment,
     )
 
