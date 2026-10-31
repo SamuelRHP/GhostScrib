@@ -18,3 +18,4 @@ export function createFixture(overrides: Partial<Report> = {}): Report {
     ...overrides,
   };
 }
+

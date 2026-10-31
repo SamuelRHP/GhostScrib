@@ -30,3 +30,4 @@ export const mixedMedium: Report = createFixture({
     footnote: "Resemblance of assessed text to AI-generated text; not proof of authorship or of how the text was produced.",
   },
 });
+

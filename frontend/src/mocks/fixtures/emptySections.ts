@@ -84,3 +84,4 @@ export const emptySections: Report = createFixture({
     structure_traits: [],
   },
 });
+
