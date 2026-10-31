@@ -151,7 +151,7 @@ export interface Report {
   limitations: string[];
   metadata: Record<string, unknown>;
 
-  // Optional additive contract extensions
-  synthetic?: boolean;
-  assessment?: AssessmentStats;
+  // Additive contract fields
+  synthetic: boolean;
+  assessment: AssessmentStats;
 }

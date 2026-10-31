@@ -119,8 +119,8 @@ This section audits the existing Python Pydantic models in [`ghostscrib/schema.p
 
 | UI Requirement / Field | Location in `schema.py` | Status | Notes / Instructions for Member 1 |
 |---|---|---|---|
-| **Synthetic Flag** (`synthetic: boolean`) | Missing on `Report` | ⚠️ **Additive Field Required** | Member 1 must add `synthetic: bool = False` to `Report`. `GET /demo-report` sets `synthetic = True`. Frontend marks this field optional until backend ships it. |
-| **Assessment Block** (`assessment: object`) | Missing explicit model | ⚠️ **Additive Field Required** | Member 1 must define `AssessmentStats` model on `Report`: `{ paragraphs_total: int, paragraphs_assessed: int, paragraphs_skipped: int, words_total: int, words_assessed: int, skipped_share: float, insufficient_text: bool }`. `insufficient_text` is `true` when assessed paragraphs < 3. Frontend marks `assessment` as optional. |
+| **Synthetic Flag** (`synthetic: boolean`) | `Report.synthetic` (`schema.py:140`) | ✅ **Implemented & Required** | Added `synthetic: bool = False` to `Report`. `GET /demo-report` returns `synthetic = True`. Frontend marks this field required. |
+| **Assessment Block** (`assessment: object`) | `Report.assessment` (`schema.py:141`) | ✅ **Implemented & Required** | Defined `AssessmentStats` model on `Report`: `{ paragraphs_total, paragraphs_assessed, paragraphs_skipped, words_total, words_assessed, skipped_share, insufficient_text }`. Frontend marks `assessment` required. |
 | **Paragraph Text, Word Count, Score, Label** | `Paragraph` (`text`, `words`, `section`, `label`, `score`) | ✅ Exists (`schema.py:18`) | Exact match: labels are `"ai"`, `"uncertain"`, `"human"`, `"not_assessed"`. |
 | **Sentence-Level Highlights & Scores** | `Paragraph.sentences` (`List[SentenceScore]`) | ✅ Exists (`schema.py:13,24`) | Exact match: `SentenceScore` (`text`, `score`). |
 | **Section Bands & Word Statistics** | `Section.band`, `Section.stats` (`SectionStats`) | ✅ Exists (`schema.py:27,35`) | Bands are `"low"`, `"medium"`, `"high"`, `"not_assessed"`. Stats include `assessed_words`, `n_ai`, `n_uncertain`, `share_ai`, `share_uncertain`. |
@@ -136,10 +136,17 @@ This section audits the existing Python Pydantic models in [`ghostscrib/schema.p
 
 ---
 
-## 7. Merge Sequence
+## 7. Merge Sequence & Status
 
-When parallel development completes, Member 4 will merge branches into `feat/web-integration` in this strict order:
-1. Baseline: `feat/mvp-pipeline` (latest commit).
-2. **Member 1**: `feat/web-api` (FastAPI backend, Pydantic schema additions, API tests).
-3. **Member 2**: `feat/web-ui-shell` (Frontend pages, router, API client, overview tab, export bar).
-4. **Member 3**: `feat/web-report-views` (Report detail tabs, sentence view, sandbox fixtures).
+All parallel branches were merged into `feat/web-integration` without conflicts in the following order:
+1. Baseline: `feat/mvp-pipeline` (latest commit `8624bc2209502636b75871064f7f17562c6acc1a`).
+2. **Member 1**: `feat/web-api` (`34e129f7828c3a6070d4c78c708350d9614d57c0`) — merged via `--no-ff`.
+3. **Member 2**: `feat/web-ui-shell` (`deb99f8c86038672320e8cfea8bfa668dc4e22b8`) — merged via `--no-ff`.
+4. **Member 3**: `feat/web-report-views` (`d79091485b212ccb66e3ee8cb35c7ed93e0fc9fc`) — merged via `--no-ff`.
+5. **Contract Sync**: OpenAPI schema re-exported, TypeScript types generated, contract gaps verified and resolved. All unit/component test suites passing.
+
+
+
+
+
+
