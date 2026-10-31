@@ -22,12 +22,18 @@ def extract_search_query_from_reference(ref_text: str) -> str:
     """Heuristically extract the main title or query tokens from a reference string."""
     # Remove leading numbering like [1], 1., (1)
     cleaned = re.sub(r"^\s*(?:\[\d+\]|\(\d+\)|\d+\.)\s*", "", ref_text)
-    # Remove URLs and DOIs
+    # Remove URLs (including github.com, etc.) and DOIs
     cleaned = re.sub(r"https?://\S+", "", cleaned)
+    cleaned = re.sub(r"\b(?:github\.com|developer\.\S+|bitbucket\.org)\S*", "", cleaned)
     cleaned = DOI_RE.sub("", cleaned)
+
+    # Strip trailing annotations
+    cleaned = re.sub(r",\s*for\s+[a-zA-Z0-9\s]+ encodings?\b.*$", "", cleaned, flags=re.IGNORECASE)
+    cleaned = re.sub(r"\.\s+(?:Common bus|Arithmetic core|Designing for|Includes the|Quoted from|Accessed|Teaching materials).*$", "", cleaned, flags=re.IGNORECASE)
+
     # Strip quotes
     cleaned = cleaned.replace('"', "").replace("'", "")
-    # Return first 200 characters of clean reference
+    # Return clean reference tokens
     tokens = cleaned.split()
     return " ".join(tokens[:25])
 
@@ -84,4 +90,3 @@ def calculate_title_similarity(query_text: str, candidate_title: str) -> float:
             return 0.0
         intersection = q_tokens.intersection(c_tokens)
         return round(len(intersection) / max(len(q_tokens), len(c_tokens)), 3)
-

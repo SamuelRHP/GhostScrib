@@ -263,3 +263,87 @@ This document logs all phases, verification gates, commands executed, observed o
 - Frontend Test Suite: **13 passed, 0 failed in 2.52s**.
 - Frontend Typecheck: **0 TypeScript errors**.
 - Gate 9: **PASSED**.
+
+
+---
+
+## Phase 10: Forensic Pipeline Hardening & 198-Paragraph DOCX Verification
+
+### Date: 2026-10-31
+**Agent Role:** Member 4 (Pipeline Hardening & Verification)  
+**Branch:** `feat/web-integration`
+
+### 1. Root-Cause Analysis of Field Failure on Real DOCX
+- **Target File**: `data/demo/COA_Experiential_Learning.docx` (198 raw paragraphs, assembly code, architecture simulation traces, and textbook citations).
+- **Failure 1 (Detector Mapping & Sentence Drift)**:
+  - The third-party Lukkinen detector (`aidet/textprep.py`) filters out non-prose paragraphs (`alpha / len < 0.75`).
+  - Previously, `map_detector_results_to_document` in `ghostscrib/pipeline.py` used a sequential fallback (`elif ret_pool: ret_match = ret_pool.pop(0)`) when a text prefix didn't match.
+  - This popped the next detector result for the wrong document paragraph, causing an off-by-one/two shift that grew down the document. When the detector pool was exhausted, the remaining 12 paragraphs retained `label="human"` with `score=None` and empty sentences (876 words erroneously counted as assessed).
+- **Failure 2 (Section Metrics Collapsing)**:
+  - Sectioning regex only matched generic terms like `Method` and `Results`, ignoring major task headers (`Task 1 — ...`, `Task 2 — ...`).
+  - All 10 tasks produced repeated sections named `Method` and `Results`, which collapsed into two dictionary entries in `stylometry.section_metrics`.
+- **Failure 3 (Bibliographic Citations)**:
+  - Figure captions and notes (`Multiplication Result`, `Memory and Instructions`) following the references block were parsed as references.
+  - Textbooks (Pearson, Morgan Kaufmann) and web tools (GitHub, simulators) were checked against Crossref and falsely labeled `unverified`.
+- **Failure 4 (Attribution Reporting)**:
+  - Word count heuristics were reported instead of the full document's model token count.
+
+### 2. Implementation of Systemic Fixes
+1. **Robust Paragraph Mapping & Invariant Enforcement**:
+   - Replaced positional fallback in `ghostscrib/pipeline.py:map_detector_results_to_document` with multi-tiered text matching (exact, substring, prefix, RapidFuzz token ratio $\ge 0.70$).
+   - Paragraphs not scored by the detector are explicitly set to `label="not_assessed"` with `score=None`, `sentences=[]`, and `reason="not scored by detector"`, never `human`.
+   - Added Pydantic `@model_validator` in `ghostscrib/schema.py`: Assessed paragraphs (`ai`, `uncertain`, `human`) MUST have a non-null float score; raises `ValueError` otherwise.
+2. **Non-prose and Code Filtering**:
+   - Implemented `classify_non_prose(text)` in `ghostscrib/parsing/sectioner.py`:
+     - Detects assembly directives (`.global`, `.text`, `.data`), labels (`_start:`), comments (`@`, `#`), and instruction opcodes (`LDR`, `STR`, `MOV`, `ADD`, `SUB`, `CMP`, `BL`, `li`, `lw`, `sw`, etc.).
+     - Detects tables (`\t`, `|`), formulas / boolean expressions (`F(A,B,C) =`), register-transfer traces (`0x...`, `←`, `AND`, `OR`), and low alpha ratio (`< 0.65`).
+     - Paragraphs are marked `not_assessed` with descriptive reasons before passing candidate text to the detector.
+3. **Hierarchical Unique Section Naming**:
+   - Implemented hierarchical heading resolution in `ghostscrib/parsing/sectioner.py` (`Task 1 · Method`, `Task 3 · Results`, `Task 4 · Analysis`).
+   - Every section is assigned a unique `id` (`sec_1`, `sec_2`, etc.) and disambiguated names, preventing dictionary collapse in `section_metrics`.
+4. **Citation Cleaning & Textbook / Web Resource Classification**:
+   - In `ghostscrib/parsing/references.py`, dropped non-citation stray lines, section titles, and captions from the bibliography block.
+   - In `ghostscrib/integrity/matcher.py`, stripped trailing annotations (`. Common bus...`, `, for ARM...`) and repository URLs (`github.com/...`) before querying.
+   - In `ghostscrib/integrity/verifier.py`, implemented `is_web_resource_or_textbook`: textbooks and web resources are assigned `status="not_checked"` with `reason="web resource / book, not checkable in Crossref"`, preventing false `unverified` flags.
+5. **Detector Structure Verdict & Extreme Traits**:
+   - Extracted detector structure verdict (`distance` vs `p99`, `level`) and extreme structure traits count (`n_extreme_traits`) from `/api/detect`.
+   - Added to `confidence_reasons` in `ghostscrib/provenance/confidence.py` and Detailed breakdown in `frontend/src/features/report/tabs/BreakdownTab.tsx` and `app/streamlit_app.py`. Document bands remain strictly unaltered.
+6. **Attribution Full Document Token Count**:
+   - Tokenized full document text via GPT-2 tokenizer.
+   - Added `total_tokens` field to `AttributionResult`. Reason explicitly reports: `Document has 6,376 tokens (under the 10,000 tokens required for statistical transition estimation).`
+
+### 3. Before vs. After Verification on 198-Paragraph DOCX
+
+| Dimension | Before Hardening | After Hardening |
+| :--- | :--- | :--- |
+| **Total Document Paragraphs** | 198 paragraphs | 161 paragraphs (captions/metadata isolated) |
+| **Scored Paragraphs** | 16 paragraphs | 16 paragraphs |
+| **Unscored Paragraphs** | 182 paragraphs | 145 paragraphs |
+| **Bug Paragraphs (`human` with `score=None`)** | **12 paragraphs (876 words)** | **0 paragraphs (0 words)** |
+| **Sentence-to-Paragraph Alignment** | Severely offset (P1 had P2 sents, P5 had P10 sents) | **100% exact substring match verified** |
+| **Section Count & Unique Keys** | 13 sections (collapsed to 2 in metrics: `Method`, `Results`) | **51 sections, 51 unique names (0 collisions)** |
+| **Bibliography Reference Count** | 14 items (including captions & stray headings) | **10 genuine references** |
+| **Citation Verification Status** | 13 unverified (including textbooks and tools) | **10 not_checked (books/web resources), 0 unverified** |
+| **Attribution Reason** | Reported ~1,777 words | **Reported full document tokens: 6,376 tokens** |
+| **Structure Diagnostics** | Not surfaced | **Distance: 11.12 vs p99: 6.75 (level: high, 4 extreme traits)** |
+
+#### 3 Examples of Verified Sentence-to-Paragraph Alignment:
+1. **Task 1 · Analysis** (Score: -3.88, Label: human):
+   - *Paragraph Text:* `One architectural change that helps: add a separate address bus (or a dedicated path from...`
+   - *First Sentence:* `One architectural change that helps: add a separate address bus (or a dedicated path from...`
+   - *Status:* Substring verified.
+2. **Task 2 · Analysis** (Score: -1.75, Label: human):
+   - *Paragraph Text:* `The minimized implementation is preferable for a control-unit signal. F does not depend on...`
+   - *First Sentence:* `The minimized implementation is preferable for a control-unit signal.`
+   - *Status:* Substring verified.
+3. **Task 3** (Score: +0.59, Label: uncertain):
+   - *Paragraph Text:* `A returns to its original value 1401, which confirms both operations. Carry = 1 on a subtr...`
+   - *First Sentence:* `A returns to its original value 1401, which confirms both operations.`
+   - *Status:* Substring verified.
+
+### 4. Regression & Gate Verification Status
+- **Backend Test Suite (`pytest tests/`)**: **75 passed, 0 failed in 11.52s**.
+- **Unit Test Coverage (`tests/test_detector_mapping.py`)**: All 6 mapping, invariant, and filtering tests passed.
+- **Frontend Typecheck (`npm run typecheck`)**: **0 TypeScript errors**.
+- **Frontend Test Suite (`npm run test`)**: **13 passed across 3 test files in 5.34s**.
+- **Gate 10**: **PASSED**.

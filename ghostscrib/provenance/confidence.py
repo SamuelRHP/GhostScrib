@@ -41,6 +41,21 @@ def calculate_provenance_confidence(
     else:
         reasons.append("Stylometric signals remain neutral relative to the baseline.")
 
+    # Extreme traits count as explanatory evidence
+    reasons.append(
+        f"Sentence structure exhibits {stylometry.n_extreme_traits} extreme trait(s) "
+        f"(|z| >= {settings.EXTREME_TRAIT_Z_SCORE}) compared to human arXiv norms."
+    )
+
+    # Detector structure verdict (distance vs p99)
+    if stylometry.structure_distance is not None and stylometry.structure_p99 is not None:
+        reasons.append(
+            f"Sentence structure distance from human norm: {stylometry.structure_distance:.2f} "
+            f"vs p99 threshold {stylometry.structure_p99:.2f} (level: {stylometry.structure_level or 'typical'})."
+        )
+    elif stylometry.structure_verdict:
+        reasons.append(f"Structure verdict: {stylometry.structure_verdict}.")
+
     # 2. Attribution signal
     if attribution.status == "ok" and attribution.ranked_candidates:
         top_cand = attribution.ranked_candidates[0]
@@ -52,10 +67,10 @@ def calculate_provenance_confidence(
             reasons.append(f"Attribution analysis corroborates AI involvement (candidate: {top_cand.label}, margin: {margin:.2f}).")
         elif not is_llm and doc_band in ("Medium", "High"):
             score -= 1
-            reasons.append(f"Attribution indicates human-like transition profile despite elevated detector signals.")
+            reasons.append("Attribution indicates human-like transition profile despite elevated detector signals.")
         elif is_llm and doc_band == "Low":
             score -= 1
-            reasons.append(f"Attribution detected LLM transitions but primary detector found low resemblance.")
+            reasons.append("Attribution detected LLM transitions but primary detector found low resemblance.")
         else:
             reasons.append(f"Attribution candidate: {top_cand.label} (experimental).")
     else:
@@ -88,4 +103,3 @@ def calculate_provenance_confidence(
         level = "Medium"
 
     return level, reasons
-

@@ -17,6 +17,7 @@ export interface Paragraph {
   label: ParagraphLabel;
   score?: number | null;
   sentences: SentenceScore[];
+  reason?: string | null;
 }
 
 export interface SectionStats {
@@ -30,6 +31,7 @@ export interface SectionStats {
 export type SectionBand = "low" | "medium" | "high" | "not_assessed";
 
 export interface Section {
+  id?: string;
   name: string;
   paragraphs: Paragraph[];
   band: SectionBand;
@@ -68,6 +70,10 @@ export interface StylometrySignal {
   n_extreme_traits: number;
   agreement: "supports" | "neutral";
   section_metrics: Record<string, DescriptiveStylometry>;
+  structure_verdict?: string | null;
+  structure_distance?: number | null;
+  structure_p99?: number | null;
+  structure_level?: string | null;
 }
 
 export interface CandidateScore {
@@ -82,6 +88,7 @@ export interface AttributionResult {
   margin?: number | null;
   method: "TRACE" | "TRACE-inspired";
   experimental: boolean;
+  total_tokens?: number | null;
 }
 
 export type CitationItemStatus = "verified" | "partial" | "unverified" | "not_checked";
@@ -92,6 +99,7 @@ export interface ReferenceDetail {
   matched_doi?: string | null;
   status: CitationItemStatus;
   similarity: number;
+  reason?: string | null;
 }
 
 export interface CitationResult {

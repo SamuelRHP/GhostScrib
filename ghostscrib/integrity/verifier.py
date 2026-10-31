@@ -1,13 +1,15 @@
 """Citation integrity engine for GhostScrib (Layer 3).
 
 Verifies references against Crossref and OpenAlex APIs, computes fuzzy title similarities,
-flags unverified records with neutral terminology, and audits numeric in-text citations.
+flags unverified records with neutral terminology, audits numeric in-text citations,
+and categorizes textbooks and web resources as not_checked with clear explanations.
 """
 
 from __future__ import annotations
 
 import json
 import logging
+import re
 import urllib.error
 import urllib.parse
 import urllib.request
@@ -24,6 +26,62 @@ from ghostscrib.parsing.references import find_out_of_range_citations
 from ghostscrib.schema import CitationResult, ReferenceDetail
 
 logger = logging.getLogger(__name__)
+
+TEXTBOOK_PUBLISHERS = [
+    "pearson",
+    "morgan kaufmann",
+    "mcgraw-hill",
+    "mcgraw hill",
+    "wiley",
+    "prentice hall",
+    "cambridge university press",
+    "oxford university press",
+    "mit press",
+    "cengage",
+    "addison-wesley",
+    "addison wesley",
+    "o'reilly",
+]
+
+TEXTBOOK_PATTERNS = [
+    r"\b\d+(?:st|nd|rd|th)?\s+ed(?:ition|\.)\b",
+    r"\btextbook\b",
+    r"\bpatterson\s+and\s+hennessy\b",
+    r"\bhennessy\s+and\s+patterson\b",
+    r"\bmorris\s+mano\b",
+    r"\bstallings\b",
+    r"\btanenbaum\b",
+]
+
+WEB_RESOURCE_PATTERNS = [
+    r"https?://",
+    r"\bgithub\.com\b",
+    r"\bdeveloper\.arm\.com\b",
+    r"\briscv\.org\b",
+    r"\bintel\.com\b",
+    r"\bsimulator\b",
+    r"\bsoftware\b",
+    r"\bteaching materials\b",
+    r"\buser manual\b",
+    r"\breference manual\b",
+    r"\barchitecture reference manual\b",
+    r"\binstruction set manual\b",
+]
+
+
+def is_web_resource_or_textbook(ref_text: str) -> bool:
+    """Detect if a reference is a textbook or web resource / software manual."""
+    s = ref_text.lower()
+    # Check textbook publishers
+    if any(pub in s for pub in TEXTBOOK_PUBLISHERS):
+        return True
+    # Check textbook patterns
+    if any(re.search(pat, s, re.IGNORECASE) for pat in TEXTBOOK_PATTERNS):
+        return True
+    # Check web resources and software/manual tools
+    if any(re.search(pat, s, re.IGNORECASE) for pat in WEB_RESOURCE_PATTERNS):
+        return True
+    return False
 
 
 class CitationVerifier:
@@ -94,6 +152,20 @@ class CitationVerifier:
 
     def verify_single_reference(self, ref_text: str, online: bool = True) -> ReferenceDetail:
         """Verify an individual reference string against cached or remote registries."""
+        # 1. First check if reference is a textbook or web resource/tool not indexed in Crossref
+        if is_web_resource_or_textbook(ref_text):
+            detail = ReferenceDetail(
+                raw=ref_text,
+                matched_doi=None,
+                matched_title=None,
+                status="not_checked",
+                similarity=0.0,
+                reason="web resource / book, not checkable in Crossref",
+            )
+            self.cache.set(ref_text, detail.model_dump())
+            return detail
+
+        # 2. Check disk cache
         cached = self.cache.get(ref_text)
         if cached:
             return ReferenceDetail(**cached)
@@ -193,4 +265,3 @@ class CitationVerifier:
             per_reference=details,
             out_of_range_intext_citations=out_of_range,
         )
-

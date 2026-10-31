@@ -64,3 +64,4 @@ def build_web() -> None:
 
 if __name__ == "__main__":
     build_web()
+

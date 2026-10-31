@@ -467,7 +467,15 @@ def render_report(report: Report, demo_mode: bool = False):
         if report.detector_reference_verdict:
             st.markdown(f"**Lukkinen Detector Reference Verdict:** `{report.detector_reference_verdict}`")
 
-        st.markdown("#### Sentence Structure Traits (Z-scores vs. 240 human arXiv papers)")
+        if report.stylometry.structure_distance is not None and report.stylometry.structure_p99 is not None:
+            dist_val = report.stylometry.structure_distance
+            p99_val = report.stylometry.structure_p99
+            lvl_val = report.stylometry.structure_level or "typical"
+            st.markdown(f"**Detector Structure Verdict:** Distance `{dist_val:.2f}` vs p99 `{p99_val:.2f}` (level: **{lvl_val.upper()}**)")
+        elif report.stylometry.structure_verdict:
+            st.markdown(f"**Detector Structure Verdict:** `{report.stylometry.structure_verdict}`")
+
+        st.markdown(f"#### Sentence Structure Traits (Z-scores vs. 240 human arXiv papers) — Extreme Traits: **{report.stylometry.n_extreme_traits}**")
         if report.stylometry.structure_traits:
             traits_data = [
                 {

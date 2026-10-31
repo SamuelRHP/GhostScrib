@@ -21,6 +21,18 @@ from ghostscrib.schema import AttributionResult, CandidateScore
 logger = logging.getLogger(__name__)
 
 
+def count_document_tokens(text: str, model_name: str = "gpt2") -> int:
+    """Accurately count document tokens using the evaluator tokenizer."""
+    try:
+        from transformers import AutoTokenizer
+        tokenizer = AutoTokenizer.from_pretrained(model_name)
+        return len(tokenizer.encode(text, truncation=False))
+    except Exception as e:
+        logger.debug(f"Tokenizer encoding failed, falling back to heuristic: {e}")
+        words = len(text.split())
+        return int(words * 1.33)
+
+
 def compute_cosine_similarity(vec_a: np.ndarray, vec_b: np.ndarray) -> float:
     """Compute cosine similarity between two normalized vectors."""
     norm_a = np.linalg.norm(vec_a)
@@ -40,8 +52,11 @@ def attribute_document(
     Guardrails:
     - Requires at least 2 candidate fingerprints.
     - Requires at least 10,000 tokens.
+    - Always reports actual full document token count.
     - Always experimental: true.
     """
+    total_tokens = count_document_tokens(text, model_name=settings.ATTRIBUTION_MODEL_NAME)
+
     fingerprints = load_fingerprints(fingerprints_dir)
     if len(fingerprints) < settings.ATTRIBUTION_MIN_CLASSES:
         return AttributionResult(
@@ -49,25 +64,25 @@ def attribute_document(
             reason=f"Fewer than {settings.ATTRIBUTION_MIN_CLASSES} candidate fingerprints available (found {len(fingerprints)}).",
             method="TRACE-inspired",
             experimental=True,
+            total_tokens=total_tokens,
         )
 
-    # Fast approximate token check using word count to avoid loading model on short texts
-    words = len(text.split())
-    if words < (settings.ATTRIBUTION_MIN_TOKENS // 2):
+    if total_tokens < settings.ATTRIBUTION_MIN_TOKENS:
         return AttributionResult(
             status="unavailable",
             reason=(
-                f"Document text is approximately {words:,} words (under the {settings.ATTRIBUTION_MIN_TOKENS:,} "
-                "tokens required for reliable transition matrix estimation)."
+                f"Document has {total_tokens:,} tokens (under the {settings.ATTRIBUTION_MIN_TOKENS:,} "
+                "tokens required for statistical transition estimation)."
             ),
             method="TRACE-inspired",
             experimental=True,
+            total_tokens=total_tokens,
         )
 
     target_device = device or settings.ATTRIBUTION_DEVICE
 
     try:
-        bucket_seq, entropy_seq, total_tokens = compute_token_ranks_and_entropy(
+        bucket_seq, entropy_seq, scored_tokens = compute_token_ranks_and_entropy(
             text,
             model_name=settings.ATTRIBUTION_MODEL_NAME,
             device=target_device,
@@ -79,17 +94,7 @@ def attribute_document(
             reason=f"Scorer failure: {e}",
             method="TRACE-inspired",
             experimental=True,
-        )
-
-    if total_tokens < settings.ATTRIBUTION_MIN_TOKENS:
-        return AttributionResult(
-            status="unavailable",
-            reason=(
-                f"Document has {total_tokens:,} model tokens (fewer than the "
-                f"{settings.ATTRIBUTION_MIN_TOKENS:,} tokens required for statistical transition estimation)."
-            ),
-            method="TRACE-inspired",
-            experimental=True,
+            total_tokens=total_tokens,
         )
 
     doc_vector = build_transition_feature_vector(bucket_seq, entropy_seq)
@@ -113,5 +118,5 @@ def attribute_document(
         margin=margin,
         method="TRACE-inspired",
         experimental=True,
+        total_tokens=total_tokens,
     )
-

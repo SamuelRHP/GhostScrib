@@ -7,7 +7,8 @@ can be tested and mocked in isolation.
 from __future__ import annotations
 
 from typing import Any, Dict, List, Literal, Optional, Tuple
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
+from typing_extensions import Self
 
 
 class SentenceScore(BaseModel):
@@ -19,9 +20,18 @@ class Paragraph(BaseModel):
     text: str
     words: int
     section: str
-    label: Literal["ai", "uncertain", "human", "not_assessed"]
+    label: Literal["ai", "uncertain", "human", "not_assessed"] = "not_assessed"
     score: Optional[float] = None
     sentences: List[SentenceScore] = Field(default_factory=list)
+    reason: Optional[str] = None
+
+    @model_validator(mode="after")
+    def check_assessed_has_score(self) -> Self:
+        if self.label in ("ai", "uncertain", "human") and self.score is None:
+            raise ValueError(
+                f"Invariant violation: assessed paragraph (label='{self.label}') must have a non-null score."
+            )
+        return self
 
 
 class SectionStats(BaseModel):
@@ -33,6 +43,7 @@ class SectionStats(BaseModel):
 
 
 class Section(BaseModel):
+    id: str = ""
     name: str
     paragraphs: List[Paragraph] = Field(default_factory=list)
     band: Literal["low", "medium", "high", "not_assessed"] = "not_assessed"
@@ -69,6 +80,10 @@ class StylometrySignal(BaseModel):
     n_extreme_traits: int = 0
     agreement: Literal["supports", "neutral"] = "neutral"
     section_metrics: Dict[str, DescriptiveStylometry] = Field(default_factory=dict)
+    structure_verdict: Optional[str] = None
+    structure_distance: Optional[float] = None
+    structure_p99: Optional[float] = None
+    structure_level: Optional[str] = None
 
 
 class CandidateScore(BaseModel):
@@ -83,6 +98,7 @@ class AttributionResult(BaseModel):
     margin: Optional[float] = None
     method: Literal["TRACE", "TRACE-inspired"] = "TRACE-inspired"
     experimental: bool = True
+    total_tokens: Optional[int] = None
 
 
 class ReferenceDetail(BaseModel):
@@ -91,6 +107,7 @@ class ReferenceDetail(BaseModel):
     matched_doi: Optional[str] = None
     status: Literal["verified", "partial", "unverified", "not_checked"] = "not_checked"
     similarity: float = 0.0
+    reason: Optional[str] = None
 
 
 class CitationResult(BaseModel):

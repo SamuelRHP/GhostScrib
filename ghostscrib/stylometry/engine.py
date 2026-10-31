@@ -1,73 +1,61 @@
-"""Stylometry engine for GhostScrib (Layer 1).
+"""Stylometric analysis engine and descriptive metrics computation (Layer 1).
 
-Extracts and analyzes:
-1. Document-level structural traits from the Lukkinen ensemble (z-scores against 240 human-authored arXiv papers).
-2. Per-section descriptive metrics (sentence length, burstiness, lexical diversity / TTR, passive voice rate).
-3. Evaluates stylometric agreement with the document detection band.
+Extracts syntactic traits, extreme Z-scores relative to human arXiv norms,
+and descriptive section-level stylometrics.
 """
 
 from __future__ import annotations
 
-import math
 import re
 from typing import Dict, List, Literal, Optional
+import numpy as np
 
 from ghostscrib.config import settings
 from ghostscrib.schema import DescriptiveStylometry, StructureTrait, StylometrySignal
 
-# Basic sentence splitter for stylometric analysis
-SENTENCE_SPLIT_RE = re.compile(r"(?<=[.!?])\s+(?=[A-Z(])")
-
-# Passive voice pattern: forms of 'to be' followed by past participle (-ed, -en, -t, etc.)
-PASSIVE_VOICE_RE = re.compile(
-    r"\b(is|are|was|were|be|been|being)\s+([a-zA-Z]+(?:ed|en|t))\b",
-    re.IGNORECASE,
-)
-
 
 def compute_descriptive_metrics(text: str) -> DescriptiveStylometry:
-    """Calculate descriptive per-section stylometric metrics.
-
-    Note: These are descriptive context metrics only (no human baseline is assumed).
-    """
+    """Compute basic descriptive stylometrics for a body of text."""
     if not text.strip():
-        return DescriptiveStylometry()
+        return DescriptiveStylometry(
+            mean_sentence_length=0.0,
+            std_sentence_length=0.0,
+            burstiness=0.0,
+            type_token_ratio=0.0,
+            passive_voice_rate=0.0,
+        )
 
-    # Split into sentences
-    sentences = [s.strip() for s in SENTENCE_SPLIT_RE.split(text) if s.strip()]
-    if not sentences:
-        sentences = [text.strip()]
+    # Heuristic sentence splitting
+    raw_sentences = [s.strip() for s in re.split(r"(?<=[.!?])\s+", text) if s.strip()]
+    sentence_lengths = [len(s.split()) for s in raw_sentences if len(s.split()) > 0]
 
-    sentence_lengths = [len(s.split()) for s in sentences]
-    n_sentences = len(sentence_lengths)
-    total_words = sum(sentence_lengths)
+    if not sentence_lengths:
+        sentence_lengths = [len(text.split())]
 
-    if total_words == 0 or n_sentences == 0:
-        return DescriptiveStylometry()
+    mean_len = float(np.mean(sentence_lengths))
+    std_len = float(np.std(sentence_lengths))
+    burstiness = round(float(std_len / mean_len), 3) if mean_len > 0 else 0.0
 
-    mean_len = total_words / n_sentences
+    tokens = [w.lower() for w in re.findall(r"\b[a-zA-Z]+\b", text)]
+    total_tokens = len(tokens)
+    unique_tokens = len(set(tokens))
+    ttr = round(float(unique_tokens / total_tokens), 3) if total_tokens > 0 else 0.0
 
-    # Standard deviation of sentence length
-    variance = sum((l - mean_len) ** 2 for l in sentence_lengths) / n_sentences
-    std_len = math.sqrt(variance)
-
-    # Burstiness: std / mean (standard deviation divided by the mean)
-    burstiness = (std_len / mean_len) if mean_len > 0 else 0.0
-
-    # Type-Token Ratio (TTR): unique word tokens / total word tokens
-    words = re.findall(r"\b[a-zA-Z0-9_\-]+\b", text.lower())
-    ttr = (len(set(words)) / len(words)) if words else 0.0
-
-    # Passive voice rate: proportion of sentences containing passive voice constructions
-    passive_count = sum(1 for s in sentences if PASSIVE_VOICE_RE.search(s))
-    passive_rate = (passive_count / n_sentences) if n_sentences > 0 else 0.0
+    # Passive voice detection heuristic: form of 'be' + past participle (-ed or irregular)
+    passive_pattern = re.compile(
+        r"\b(is|are|was|were|been|being|be)\b\s+([a-z]+ed|built|shown|found|seen|given|taken|known|made|done)\b",
+        re.IGNORECASE,
+    )
+    matches = len(passive_pattern.findall(text))
+    num_sentences = max(1, len(sentence_lengths))
+    passive_rate = round(float(matches / num_sentences), 3)
 
     return DescriptiveStylometry(
         mean_sentence_length=round(mean_len, 2),
         std_sentence_length=round(std_len, 2),
-        burstiness=round(burstiness, 3),
-        type_token_ratio=round(ttr, 3),
-        passive_voice_rate=round(passive_rate, 3),
+        burstiness=burstiness,
+        type_token_ratio=ttr,
+        passive_voice_rate=passive_rate,
     )
 
 
@@ -75,7 +63,7 @@ def compute_stylometry_agreement(
     doc_band: str,
     n_extreme_traits: int,
 ) -> Literal["supports", "neutral"]:
-    """Determine stylometry agreement with the primary detection band.
+    """Determine whether stylometric traits support or remain neutral to the document band.
 
     Agreement rule:
     - 'supports' when document band is Medium/High and n_extreme_traits >= 3,
@@ -93,6 +81,10 @@ def build_stylometry_signal(
     raw_structure_traits: List[Dict[str, float]],
     doc_band: str,
     section_texts: Optional[Dict[str, str]] = None,
+    structure_verdict: Optional[str] = None,
+    structure_distance: Optional[float] = None,
+    structure_p99: Optional[float] = None,
+    structure_level: Optional[str] = None,
 ) -> StylometrySignal:
     """Build the complete StylometrySignal object."""
     traits: List[StructureTrait] = []
@@ -122,5 +114,8 @@ def build_stylometry_signal(
         n_extreme_traits=extreme_count,
         agreement=agreement,
         section_metrics=sec_metrics,
+        structure_verdict=structure_verdict,
+        structure_distance=structure_distance,
+        structure_p99=structure_p99,
+        structure_level=structure_level,
     )
-
