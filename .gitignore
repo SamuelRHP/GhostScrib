@@ -53,6 +53,7 @@ data/samples/non_native/*
 !data/samples/non_native/README.md
 data/samples/other_field/*
 !data/samples/other_field/README.md
+data/demo/*.pdf
 
 # Third party cloned dependencies
 third_party/

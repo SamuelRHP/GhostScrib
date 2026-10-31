@@ -12,6 +12,7 @@ from pathlib import Path
 from typing import Any, Callable, Dict, List, Literal, Optional
 
 from ghostscrib.detection.client import DetectorError, DetectorUnavailableError
+from ghostscrib.parsing.extractor import ExtractionError
 from ghostscrib.pipeline import run_pipeline
 from ghostscrib.schema import Report
 
@@ -237,7 +238,7 @@ class JobManager:
                     "code": "detector_unavailable",
                     "message": "The AI text detector service is currently unavailable.",
                 }
-        except (ValueError, RuntimeError) as e:
+        except (ExtractionError, ValueError, RuntimeError) as e:
             err_msg = str(e).lower()
             logger.warning(f"Parsing error during job {job.job_id}: {e}")
             with self._lock:
@@ -249,7 +250,7 @@ class JobManager:
                         "code": "corrupt_file",
                         "message": "The uploaded file could not be parsed or is corrupted.",
                     }
-                elif "no text" in err_msg:
+                elif "no text" in err_msg or "scanned" in err_msg or "empty" in err_msg:
                     job.error = {
                         "code": "no_text_extracted",
                         "message": "No readable prose text could be extracted from this document.",
