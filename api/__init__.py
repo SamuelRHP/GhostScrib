@@ -1,0 +1,1 @@
+"""GhostScrib FastAPI Application Package."""
