@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Literal, Union
+from typing import Literal, Optional, Union
 
 from ghostscrib.parsing.cleaner import clean_text_block
 from ghostscrib.parsing.disclosure import extract_disclosure_text
@@ -15,7 +15,7 @@ from ghostscrib.schema import ParsedDocument
 
 def parse_document(
     file_input: Union[bytes, Path, str],
-    filename: str,
+    filename: Optional[str] = None,
     field: Literal["cs_eng", "other"] = "cs_eng",
 ) -> ParsedDocument:
     """Extract, clean, segment, and parse an academic document.
@@ -28,6 +28,12 @@ def parse_document(
     Returns:
         ParsedDocument containing sections, references, disclosure, and word counts.
     """
+    if not filename:
+        if isinstance(file_input, (str, Path)):
+            filename = Path(file_input).name
+        else:
+            filename = "document.pdf"
+
     raw_text = extract_raw_text(file_input, filename)
 
     # 1. Detect AI disclosure before splitting references

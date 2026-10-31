@@ -88,7 +88,7 @@ def map_detector_results_to_document(
 
 def run_pipeline(
     file_input: Union[bytes, Path, str],
-    filename: str,
+    filename: Optional[str] = None,
     field: Literal["cs_eng", "other"] = "cs_eng",
     check_citations_online: bool = True,
     run_attribution: bool = True,
@@ -96,6 +96,12 @@ def run_pipeline(
     detector_client: Optional[LukkinenClient] = None,
 ) -> Report:
     """Execute the full GhostScrib analysis pipeline."""
+    if not filename:
+        if isinstance(file_input, (str, Path)):
+            filename = Path(file_input).name
+        else:
+            filename = "manuscript.pdf"
+
     # 0. Demo Mode: Load pre-generated synthetic report
     if demo_mode:
         demo_file = settings.DATA_DIR / "demo" / "demo_report.json"
