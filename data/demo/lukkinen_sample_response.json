@@ -1,0 +1,96 @@
+{
+  "verdict": "likely AI-generated",
+  "share_words": {
+    "ai": 1.0,
+    "uncertain": 0.0,
+    "human": 0.0
+  },
+  "n_paragraphs": 1,
+  "n_skipped": 0,
+  "paragraphs": [
+    {
+      "text": "In this paper, we propose a novel framework for distributed consensus in asynchronous networks subject to Byzantine failures. Conventional distributed protocols often incur severe latency overheads when operating across geographically dispersed clusters, primarily due to quadratic communication complexity. To mitigate these inefficiencies, our approach leverages an optimistic quorum mechanism combined with threshold signature verification, ensuring optimal throughput under benign network conditions while preserving safety and liveness guarantees in the presence of malicious adversaries. We provide formal proofs of correctness and validate the empirical efficiency of our system through extensive trace-driven simulations.",
+      "words": 91,
+      "score": 1.3297275190370026,
+      "label": "ai",
+      "signals": {
+        "deberta-base-v2": 1.33
+      },
+      "sentences": [
+        {
+          "text": "In this paper, we propose a novel framework for distributed consensus in asynchronous networks subject to Byzantine failures.",
+          "score": 1.4408696385207942
+        },
+        {
+          "text": "Conventional distributed protocols often incur severe latency overheads when operating across geographically dispersed clusters, primarily due to quadratic communication complexity.",
+          "score": 1.5648213675812435
+        },
+        {
+          "text": "To mitigate these inefficiencies, our approach leverages an optimistic quorum mechanism combined with threshold signature verification, ensuring optimal throughput under benign network conditions while preserving safety and liveness guarantees in the presence of malicious adversaries.",
+          "score": 1.5648213675812435
+        },
+        {
+          "text": "We provide formal proofs of correctness and validate the empirical efficiency of our system through extensive trace-driven simulations.",
+          "score": 1.688773096641693
+        }
+      ]
+    }
+  ],
+  "structure_traits": [
+    {
+      "trait": "first person in sentence %",
+      "value": 75.0,
+      "human_mean": 26.52,
+      "z": 3.34
+    },
+    {
+      "trait": "copular 'X is Y' %",
+      "value": 0.0,
+      "human_mean": 19.44,
+      "z": -2.57
+    },
+    {
+      "trait": "passive %",
+      "value": 0.0,
+      "human_mean": 33.88,
+      "z": -2.48
+    },
+    {
+      "trait": "opens with adverb / connective %",
+      "value": 0.0,
+      "human_mean": 13.13,
+      "z": -2.2
+    },
+    {
+      "trait": "opens with first person %",
+      "value": 25.0,
+      "human_mean": 9.16,
+      "z": 2.16
+    },
+    {
+      "trait": "sentence length, CV",
+      "value": 0.3,
+      "human_mean": 0.47,
+      "z": -1.96
+    },
+    {
+      "trait": "opens with anaphoric (This/It/These) %",
+      "value": 0.0,
+      "human_mean": 8.81,
+      "z": -1.89
+    },
+    {
+      "trait": "appositives/parentheses per sentence",
+      "value": 0.0,
+      "human_mean": 0.46,
+      "z": -1.79
+    }
+  ],
+  "structure_distance": null,
+  "sentence_threshold": 1.0,
+  "sentence_threshold_5": 0.0,
+  "thresholds": {
+    "ai": 1.0,
+    "uncertain": 0.0
+  }
+}

@@ -1,0 +1,316 @@
+{
+  "document": {
+    "sections": [
+      {
+        "name": "Front matter",
+        "paragraphs": [
+          {
+            "text": "GhostScrib Demo Manuscript: Forensic Authorship and Provenance Analysis in Modern Academic Publishing. Authors: Alex Mercer, Elena Rostova, Samuel Patel. Department of Computer Science and Engineering, Institute of Advanced Technology.",
+            "words": 32,
+            "section": "Front matter",
+            "label": "not_assessed",
+            "score": null,
+            "sentences": []
+          }
+        ],
+        "band": "not_assessed",
+        "stats": {
+          "assessed_words": 0,
+          "n_ai": 0,
+          "n_uncertain": 0,
+          "share_ai": 0.0,
+          "share_uncertain": 0.0
+        },
+        "notes": "Author and metadata block; excluded from assessment."
+      },
+      {
+        "name": "Abstract",
+        "paragraphs": [
+          {
+            "text": "The rapid advancement and widespread integration of generative artificial intelligence have fundamentally challenged traditional academic peer review models. Conventional automated detection tools rely on opaque binary classifications that fail to capture nuanced hybrid human-machine writing workflows. In this paper, we propose a multi-layered provenance framework designed specifically to provide evidence-based decision support for journal editors and reviewers. Our system integrates domain-tuned transformer ensembles, token-level transition fingerprinting, and automated bibliographic integrity verification. Experimental evaluations on curated computer science corpora demonstrate that our approach reliably isolates AI-assisted passages while maintaining low false-positive rates on authentic human scholarship.",
+            "words": 105,
+            "section": "Abstract",
+            "label": "human",
+            "score": -0.84,
+            "sentences": [
+              { "text": "The rapid advancement and widespread integration of generative artificial intelligence have fundamentally challenged traditional academic peer review models.", "score": -0.72 },
+              { "text": "Conventional automated detection tools rely on opaque binary classifications that fail to capture nuanced hybrid human-machine writing workflows.", "score": -0.89 },
+              { "text": "In this paper, we propose a multi-layered provenance framework designed specifically to provide evidence-based decision support for journal editors and reviewers.", "score": -0.81 },
+              { "text": "Our system integrates domain-tuned transformer ensembles, token-level transition fingerprinting, and automated bibliographic integrity verification.", "score": -0.91 },
+              { "text": "Experimental evaluations on curated computer science corpora demonstrate that our approach reliably isolates AI-assisted passages while maintaining low false-positive rates on authentic human scholarship.", "score": -0.86 }
+            ]
+          }
+        ],
+        "band": "low",
+        "stats": {
+          "assessed_words": 105,
+          "n_ai": 0,
+          "n_uncertain": 0,
+          "share_ai": 0.0,
+          "share_uncertain": 0.0
+        },
+        "notes": null
+      },
+      {
+        "name": "1. Introduction",
+        "paragraphs": [
+          {
+            "text": "Scientific manuscript evaluation has historically depended upon the presumption of authentic individual scholarship and rigorous intellectual ownership. However, modern generative models can produce fluent, mathematically plausible literature surveys and structural outlines that closely mirror genuine academic discourse. This phenomenon obscures the distinction between authentic intellectual contribution and automated text generation, introducing significant vulnerability into scholarly dissemination pipelines.",
+            "words": 61,
+            "section": "1. Introduction",
+            "label": "ai",
+            "score": 1.28,
+            "sentences": [
+              { "text": "Scientific manuscript evaluation has historically depended upon the presumption of authentic individual scholarship and rigorous intellectual ownership.", "score": 0.42 },
+              { "text": "However, modern generative models can produce fluent, mathematically plausible literature surveys and structural outlines that closely mirror genuine academic discourse.", "score": 1.34 },
+              { "text": "This phenomenon obscures the distinction between authentic intellectual contribution and automated text generation, introducing significant vulnerability into scholarly dissemination pipelines.", "score": 1.39 }
+            ]
+          },
+          {
+            "text": "Furthermore, existing commercial plagiarism scanners were fundamentally architected to detect verbatim string matching rather than probabilistic text generation. When authors prompt large language models to draft or heavily revise theoretical frameworks, these traditional tools remain blind to synthetic prose. Consequently, journal editorial boards frequently receive submissions with vague or incomplete generative AI disclosure statements, lacking actionable means to verify compliance.",
+            "words": 64,
+            "section": "1. Introduction",
+            "label": "ai",
+            "score": 1.15,
+            "sentences": [
+              { "text": "Furthermore, existing commercial plagiarism scanners were fundamentally architected to detect verbatim string matching rather than probabilistic text generation.", "score": 1.12 },
+              { "text": "When authors prompt large language models to draft or heavily revise theoretical frameworks, these traditional tools remain blind to synthetic prose.", "score": 1.22 },
+              { "text": "Consequently, journal editorial boards frequently receive submissions with vague or incomplete generative AI disclosure statements, lacking actionable means to verify compliance.", "score": 1.11 }
+            ]
+          },
+          {
+            "text": "In response to these emerging publishing bottlenecks, this investigation introduces GhostScrib, a transparent decision-support architecture. GhostScrib decomposes manuscripts across five forensic layers, evaluating paragraph-level token probabilities, sentence structure distributions, and bibliographic cross-references. By delivering granular transparency reports rather than binary verdicts, the framework empowers editors to exercise informed editorial oversight.",
+            "words": 56,
+            "section": "1. Introduction",
+            "label": "human",
+            "score": -0.42,
+            "sentences": [
+              { "text": "In response to these emerging publishing bottlenecks, this investigation introduces GhostScrib, a transparent decision-support architecture.", "score": -0.31 },
+              { "text": "GhostScrib decomposes manuscripts across five forensic layers, evaluating paragraph-level token probabilities, sentence structure distributions, and bibliographic cross-references.", "score": -0.48 },
+              { "text": "By delivering granular transparency reports rather than binary verdicts, the framework empowers editors to exercise informed editorial oversight.", "score": -0.46 }
+            ]
+          }
+        ],
+        "band": "high",
+        "stats": {
+          "assessed_words": 181,
+          "n_ai": 2,
+          "n_uncertain": 0,
+          "share_ai": 0.6906,
+          "share_uncertain": 0.0
+        },
+        "notes": null
+      },
+      {
+        "name": "2. Methods and Experimental Architecture",
+        "paragraphs": [
+          {
+            "text": "Our empirical methodology employs a localized dual-classifier ensemble operating over academic text segments. We extracted feature representations using domain-tuned DeBERTa-v3 backbones trained against historical arXiv preprints. Each evaluated paragraph undergoes syntactic token normalization, ligature resolution, and sliding three-sentence window evaluation to calculate continuous likelihood scores.",
+            "words": 49,
+            "section": "2. Methods and Experimental Architecture",
+            "label": "human",
+            "score": -0.65,
+            "sentences": [
+              { "text": "Our empirical methodology employs a localized dual-classifier ensemble operating over academic text segments.", "score": -0.58 },
+              { "text": "We extracted feature representations using domain-tuned DeBERTa-v3 backbones trained against historical arXiv preprints.", "score": -0.71 },
+              { "text": "Each evaluated paragraph undergoes syntactic token normalization, ligature resolution, and sliding three-sentence window evaluation to calculate continuous likelihood scores.", "score": -0.66 }
+            ]
+          },
+          {
+            "text": "To evaluate bibliographic fidelity, we designed an asynchronous querying pipeline interfacing with Crossref and OpenAlex REST interfaces. Reference entries extracted from the bibliography are mapped to digital object identifiers, and normalized Levenshtein similarity metrics are calculated against official indexed metadata records to identify unresolvable entries.",
+            "words": 48,
+            "section": "2. Methods and Experimental Architecture",
+            "label": "human",
+            "score": -0.52,
+            "sentences": [
+              { "text": "To evaluate bibliographic fidelity, we designed an asynchronous querying pipeline interfacing with Crossref and OpenAlex REST interfaces.", "score": -0.48 },
+              { "text": "Reference entries extracted from the bibliography are mapped to digital object identifiers, and normalized Levenshtein similarity metrics are calculated against official indexed metadata records to identify unresolvable entries.", "score": -0.56 }
+            ]
+          }
+        ],
+        "band": "low",
+        "stats": {
+          "assessed_words": 97,
+          "n_ai": 0,
+          "n_uncertain": 0,
+          "share_ai": 0.0,
+          "share_uncertain": 0.0
+        },
+        "notes": null
+      },
+      {
+        "name": "3. Discussion and Integrity Findings",
+        "paragraphs": [
+          {
+            "text": "The quantitative experimental findings reveal distinct structural deviations between autonomously generated prose and human academic composition. In particular, automated text frequently demonstrates uniform sentence length distribution and constrained syntactic burstiness. However, as frontier models continue to evolve, simple statistical metrics alone become insufficient, necessitating holistic multi-modal forensic evaluation.",
+            "words": 52,
+            "section": "3. Discussion and Integrity Findings",
+            "label": "ai",
+            "score": 1.18,
+            "sentences": [
+              { "text": "The quantitative experimental findings reveal distinct structural deviations between autonomously generated prose and human academic composition.", "score": 1.15 },
+              { "text": "In particular, automated text frequently demonstrates uniform sentence length distribution and constrained syntactic burstiness.", "score": 1.25 },
+              { "text": "However, as frontier models continue to evolve, simple statistical metrics alone become insufficient, necessitating holistic multi-modal forensic evaluation.", "score": 1.14 }
+            ]
+          },
+          {
+            "text": "Furthermore, our citation audit uncovered instances where generated bibliographic citations fabricated plausible journal volume numbers and publication years for non-existent manuscripts. These hallucinatory bibliographic artifacts present severe risks to the cumulative integrity of scientific literature when accepted without verification.",
+            "words": 41,
+            "section": "3. Discussion and Integrity Findings",
+            "label": "uncertain",
+            "score": 0.45,
+            "sentences": [
+              { "text": "Furthermore, our citation audit uncovered instances where generated bibliographic citations fabricated plausible journal volume numbers and publication years for non-existent manuscripts.", "score": 0.52 },
+              { "text": "These hallucinatory bibliographic artifacts present severe risks to the cumulative integrity of scientific literature when accepted without verification.", "score": 0.38 }
+            ]
+          }
+        ],
+        "band": "medium",
+        "stats": {
+          "assessed_words": 93,
+          "n_ai": 1,
+          "n_uncertain": 1,
+          "share_ai": 0.5591,
+          "share_uncertain": 0.4409
+        },
+        "notes": null
+      }
+    ],
+    "references": [
+      "[1] A. Vaswani et al., 'Attention is all you need,' in Advances in Neural Information Processing Systems, vol. 30, 2017.",
+      "[2] J. Devlin et al., 'BERT: Pre-training of deep bidirectional transformers for language understanding,' in NAACL-HLT, 2019.",
+      "[3] L. D'Agati, 'Local academic AI text detection via domain-calibrated DeBERTa ensembles,' arXiv preprint, 2025.",
+      "[4] A. Shetty, Q. Xu, O. Ohrimenko, and J. H. Lau, 'Who Wrote the Book? Detecting and Attributing LLM Ghostwriters,' EMNLP / arXiv 2603.28054, 2026.",
+      "[5] K. H. Wang and M. S. Miller, 'Fabricated and Hallucinatory Citations in Generative Biomedical Literature,' Journal of Scientific Computing, 2026."
+    ],
+    "disclosure_text": "The authors used ChatGPT exclusively for language editing, proofreading, and grammatical polishing of the initial manuscript draft.",
+    "field": "cs_eng",
+    "n_words": 476,
+    "parse_warnings": []
+  },
+  "transparency_report": {
+    "human_contribution": [0.68, 0.76],
+    "ai_contribution": [0.24, 0.32],
+    "provenance_confidence": "Medium",
+    "confidence_reasons": [
+      "Stylometric sentence structure profile supports the detection band.",
+      "Attribution analysis unavailable: Document under 10,000 tokens (neutral impact on confidence).",
+      "Assessed volume is under 1,500 words (476 words assessed)."
+    ],
+    "disclosure_consistency": "Possible mismatch",
+    "disclosure_explanation": "Author declared AI was used only for language editing, but high AI resemblance was detected across multiple sections. Text-level evidence cannot prove how a manuscript was written.",
+    "citation_summary": "1 of 5 could not be verified (0 not checked)",
+    "flagged_sections": [
+      "1. Introduction",
+      "3. Discussion and Integrity Findings"
+    ],
+    "document_band": "High",
+    "banner": "SYNTHETIC DEMO DATA: Validated on English computer-science/engineering text only. Indicative only. Decision support for editors, not an automated misconduct verdict.",
+    "footnote": "Resemblance of assessed text to AI-generated text; not proof of authorship or of how the text was produced."
+  },
+  "stylometry": {
+    "structure_traits": [
+      { "trait": "sentence length, mean", "value": 24.8, "human_mean": 23.03, "z": 0.52 },
+      { "trait": "subordinate clauses per sentence", "value": 1.85, "human_mean": 1.14, "z": 2.22 },
+      { "trait": "passive %", "value": 42.1, "human_mean": 33.88, "z": 0.60 },
+      { "trait": "nominalizations per word %", "value": 9.4, "human_mean": 5.72, "z": 2.14 },
+      { "trait": "appositives/parentheses per sentence", "value": 0.98, "human_mean": 0.46, "z": 2.05 }
+    ],
+    "n_extreme_traits": 3,
+    "agreement": "supports",
+    "section_metrics": {
+      "1. Introduction": {
+        "mean_sentence_length": 25.86,
+        "std_sentence_length": 4.12,
+        "burstiness": 0.16,
+        "type_token_ratio": 0.68,
+        "passive_voice_rate": 0.28
+      },
+      "2. Methods and Experimental Architecture": {
+        "mean_sentence_length": 24.25,
+        "std_sentence_length": 5.82,
+        "burstiness": 0.24,
+        "type_token_ratio": 0.74,
+        "passive_voice_rate": 0.40
+      },
+      "3. Discussion and Integrity Findings": {
+        "mean_sentence_length": 23.25,
+        "std_sentence_length": 3.95,
+        "burstiness": 0.17,
+        "type_token_ratio": 0.71,
+        "passive_voice_rate": 0.33
+      }
+    }
+  },
+  "attribution": {
+    "status": "unavailable",
+    "reason": "Document has 476 words (~620 tokens), fewer than the 10,000 tokens required for statistical transition estimation.",
+    "ranked_candidates": [],
+    "margin": null,
+    "method": "TRACE-inspired",
+    "experimental": true
+  },
+  "citation_integrity": {
+    "total": 5,
+    "verified": 4,
+    "partial": 0,
+    "unverified": 1,
+    "not_checked": 0,
+    "per_reference": [
+      {
+        "raw": "[1] A. Vaswani et al., 'Attention is all you need,' in Advances in Neural Information Processing Systems, vol. 30, 2017.",
+        "matched_title": "Attention is All You Need",
+        "matched_doi": "10.5555/3295222.3295349",
+        "status": "verified",
+        "similarity": 0.96
+      },
+      {
+        "raw": "[2] J. Devlin et al., 'BERT: Pre-training of deep bidirectional transformers for language understanding,' in NAACL-HLT, 2019.",
+        "matched_title": "BERT: Pre-training of Deep Bidirectional Transformers for Language Understanding",
+        "matched_doi": "10.18653/v1/n19-1423",
+        "status": "verified",
+        "similarity": 0.98
+      },
+      {
+        "raw": "[3] L. D'Agati, 'Local academic AI text detection via domain-calibrated DeBERTa ensembles,' arXiv preprint, 2025.",
+        "matched_title": "Local academic AI text detection via domain-calibrated DeBERTa ensembles",
+        "matched_doi": null,
+        "status": "verified",
+        "similarity": 0.91
+      },
+      {
+        "raw": "[4] A. Shetty, Q. Xu, O. Ohrimenko, and J. H. Lau, 'Who Wrote the Book? Detecting and Attributing LLM Ghostwriters,' EMNLP / arXiv 2603.28054, 2026.",
+        "matched_title": "Who Wrote the Book? Detecting and Attributing LLM Ghostwriters",
+        "matched_doi": "10.48550/arXiv.2603.28054",
+        "status": "verified",
+        "similarity": 0.95
+      },
+      {
+        "raw": "[5] K. H. Wang and M. S. Miller, 'Fabricated and Hallucinatory Citations in Generative Biomedical Literature,' Journal of Scientific Computing, 2026.",
+        "matched_title": null,
+        "matched_doi": null,
+        "status": "unverified",
+        "similarity": 0.0
+      }
+    ],
+    "out_of_range_intext_citations": []
+  },
+  "disclosure": {
+    "statement_class": "editing_only",
+    "consistency": "possible_mismatch",
+    "explanation": "Author declared AI was used only for language editing, but high AI resemblance was detected across multiple sections. Text-level evidence cannot prove how a manuscript was written."
+  },
+  "detector_reference_verdict": "likely AI-generated",
+  "limitations": [
+    "Evaluated on English computer-science/engineering academic prose; other fields have higher false-positive rates.",
+    "Isolated flagged paragraphs appear in approximately 8% of human-written papers.",
+    "Attribution is experimental and requires long text (>10,000 tokens) with pre-built model fingerprints.",
+    "Citation checks rely on Crossref/OpenAlex and cannot distinguish database absence from fabrication.",
+    "Detector-guided iterative rewriting can evade sequence-level detection."
+  ],
+  "metadata": {
+    "demo": true,
+    "dataset": "SYNTHETIC DEMO DATA"
+  }
+}
+

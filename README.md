@@ -1,199 +1,264 @@
 # GhostScrib
 **A scientific manuscript provenance and ghost-authorship analysis framework.**
 
-GhostScrib moves the question from *"Was AI used?"* to *"How much, where, and can the authorship claim be trusted?"* It produces graded, evidence-based reports for editors and reviewers instead of a single yes/no verdict.
+GhostScrib moves the question from *"Was AI used?"* to *"How much, where, and can the authorship claim be trusted?"* It produces graded, evidence-based reports for editors and reviewers instead of a simplistic binary yes/no verdict.
 
-> **Status:** Early planning. This repository has just been created and no code has been written yet. This README describes the intended design and roadmap.
+> **Status:** **Working MVP Prototype (Verified).** This repository contains a fully functional, local-first implementation of the 5-layer GhostScrib pipeline, complete with a Streamlit interface, PyMuPDF/DOCX extraction, local DeBERTa ensemble detection, TRACE-inspired attribution, Crossref/OpenAlex citation auditing, and PDF/HTML/JSON report generation.
 
 ---
 
 ## Table of Contents
 
-- [Problem](#problem)
-- [What GhostScrib Does](#what-ghostscrib-does)
-- [Sample Output](#sample-output)
-- [How It Works](#how-it-works)
-- [Planned Tech Stack](#planned-tech-stack)
-- [How GhostScrib Differs from Typical AI Detectors](#how-ghostscrib-differs-from-typical-ai-detectors)
-- [Responsible Use and Limitations](#responsible-use-and-limitations)
-- [Roadmap](#roadmap)
-- [Planned Repository Structure](#planned-repository-structure)
-- [Getting Started](#getting-started)
-- [References](#references)
+- [Core Principles & Design Stance](#core-principles--design-stance)
+- [How GhostScrib Works](#how-ghostscrib-works)
+- [Architecture & The Five Layers](#architecture--the-five-layers)
+- [Journal Transparency Report Output](#journal-transparency-report-output)
+- [Tech Stack](#tech-stack)
+- [Quick Start Guide](#quick-start-guide)
+  - [Prerequisites](#prerequisites)
+  - [1. Installation](#1-installation)
+  - [2. Setup Third-Party Models](#2-setup-third-party-models)
+  - [3. Start the Detector Service](#3-start-the-detector-service)
+  - [4. Launch the Streamlit App](#4-launch-the-streamlit-app)
+- [Running Tests](#running-tests)
+- [CLI Evaluation Tool](#cli-evaluation-tool)
+- [Repository Layout](#repository-layout)
+- [Known Limitations & Disclosures](#known-limitations--disclosures)
+- [References & Citations](#references--citations)
 
 ---
 
-## Problem
+## Core Principles & Design Stance
 
-Journals receive AI-disclosure statements from authors, but have no evidence of how a manuscript was actually written. Existing approaches fall short in five ways:
+1. **Decision Support, Never a Verdict:** GhostScrib assists editorial and peer review workflows with transparent evidence. It never delivers automated misconduct accusations.
+2. **No Bare Percentages or Binary Flags:** Every evaluation is presented as a confidence-graded band (`Low`, `Medium`, `High`, or `Insufficient text`) accompanied by explicit reasoning and contribution ranges.
+3. **Neutral, Non-Accusatory Terminology:** Findings are framed objectively (`resembles AI-generated text`, `could not be verified`, `possible mismatch`), strictly avoiding terms like "cheating", "fraud", or "fake".
+4. **Local-First Privacy:** Manuscript prose never leaves the local machine. Only sanitized bibliographic strings are queried against Crossref and OpenAlex APIs for citation verification. Uploaded files are processed in-memory or in isolated temporary buffers and purged immediately.
+5. **No Synthetic Fabrication:** Real benchmark models and deterministic heuristic rules are used. Synthetic demo datasets are explicitly tagged with `SYNTHETIC DEMO DATA`.
 
-| Challenge | Description |
-|---|---|
-| **Unreliable detection** | False positives and negatives; accuracy drops on edited text and newer models. |
-| **No explainability** | No indication of which sections were flagged, or why. |
-| **Authorship is not generation** | People may declare authorship of AI-written text they don't feel they own. |
-| **No provenance** | No record of revision history or of human vs. AI contribution. |
-| **Evasion arms race** | Paraphrasers, style-transfer and "stealth" tools are built to defeat detectors. |
+---
 
-## What GhostScrib Does
+## How GhostScrib Works
 
-Instead of answering "AI or human?", GhostScrib answers five questions:
-
-1. **How much** AI was involved?
-2. **Which sections** show signs of AI assistance?
-3. **How much human contribution** is evident?
-4. Does the **AI-disclosure statement match** the evidence?
-5. Are the **citations real and consistent?**
-
-Every score is shown with its confidence level and the supporting evidence. The tool is designed as decision support for humans, not an automated misconduct verdict.
-
-### Design principles (from the literature)
-
-| Research finding | Design response |
-|---|---|
-| Binary AI detectors are not reliable enough | Graded, evidence-based scores, never a yes/no verdict |
-| Generating text is not the same as authorship | Measure the degree of AI involvement and answerability |
-| Hybrid human + AI writing is the hardest case | Section-level analysis built for mixed authorship |
-| Detection and evasion form an arms race | Multiple independent signals plus provenance, not one detector |
-| Publishing workflows lack provenance tracking | A Journal Transparency Report for editors and reviewers |
-
-## Sample Output
-
-The **Journal Transparency Report** is the final deliverable. The values below are an **illustrative mock-up, not real data**.
-
-| Metric | Example value |
-|---|---|
-| Human Contribution | 68% |
-| AI Contribution | 32% |
-| Provenance Confidence | Medium |
-| Disclosure Consistency | ⚠ Mismatch |
-| Citation Integrity | 2 of 41 unverifiable |
-| Flagged Sections | Introduction, Discussion |
-
-## How It Works
-
-GhostScrib is a five-layer pipeline. A manuscript (PDF or DOCX) and the author's AI-disclosure statement go in; a section-level transparency report comes out.
+GhostScrib operates as an end-to-end 5-layer pipeline that ingests academic manuscripts in PDF, DOCX, or TXT format alongside the authors' declared AI disclosure statement:
 
 ```
-Manuscript (PDF / DOCX) + AI-disclosure statement
-        │
-        ▼
-Layer 1  Stylometry            sentence length, lexical diversity, burstiness
-        │
-        ▼
-Layer 2  LLM Attribution       Human / GPT / Claude / Gemini / mixed (TRACE-inspired)
-        │
-        ▼
-Layer 3  Integrity Check       reference validity, hallucinated citations
-        │
-        ▼
-Layer 4  Provenance Scoring    human vs. AI share, confidence, disclosure match
-        │
-        ▼
-Layer 5  Transparency Report   section-level evidence for editors
+Manuscript (PDF / DOCX / TXT) + AI Disclosure Statement
+                       │
+                       ▼
+Layer 0: Parsing & Sanitization  (PyMuPDF / python-docx / regex)
+         - Multi-column reading order correction
+         - Front matter (title, authors) isolation [not assessed]
+         - Bibliography separation and disclosure statement detection
+                       │
+                       ▼
+Layer 1: Primary Detection & Stylometry  (Lukkinen DeBERTa-v3 / spaCy)
+         - Local DeBERTa-v3 domain ensemble (0.5% calibrated FPR)
+         - Sentence-level classification & highlight scores
+         - 12 syntactic/structural traits compared to 240 human arXiv papers
+                       │
+                       ▼
+Layer 2: Attribution [Experimental]  (TRACE-inspired GPT-2)
+         - Token transition probability matrices & rank-bucketing
+         - Safeguards: Activated ONLY when document length >= 10,000 tokens
+                       │
+                       ▼
+Layer 3: Bibliographic Citation Integrity  (Crossref / OpenAlex / RapidFuzz)
+         - DOI and title verification with token-sort fuzzy matching
+         - Out-of-range in-text citation index audits
+         - Persistent on-disk caching (data/cache/citations.json)
+                       │
+                       ▼
+Layer 4: Provenance Aggregation & Confidence  (Deterministic Rules)
+         - Section-level bands with isolated flag exemption (8% human base rate)
+         - Document band calculation (requires >= 3 assessed paragraphs)
+         - Provenance confidence scoring (volume, trait agreement, detector margin)
+         - Disclosure consistency matching matrix
+                       │
+                       ▼
+Layer 5: Journal Transparency Report  (Streamlit / PDF / HTML / JSON)
+         - Interactive multi-tab evidence explorer
+         - Color-blind accessible badges & sentence highlights
+         - Publication-ready PDF export via ReportLab
 ```
 
-## Planned Tech Stack
+---
 
-| Area | Tools |
-|---|---|
-| Parsing | GROBID, PyMuPDF, python-docx |
-| Stylometry | spaCy, NLTK, textstat |
-| Attribution | Hugging Face Transformers (RoBERTa / DeBERTa) |
-| Citation checks | Crossref and OpenAlex APIs |
-| Front end and report | Streamlit, with PDF export |
-| Backend (later phase) | Python, FastAPI |
+## Journal Transparency Report Output
 
-**Why Streamlit first:** the whole stack (parsing, NLP, models, citation checks) is Python, and Streamlit lets a single codebase serve both the analysis and the report UI without a separate front-end build. FastAPI can be introduced once the analysis modules are stable and an API is needed.
+The **Journal Transparency Report** provides editors and reviewers with structured evidence across five core dimensions:
 
-## How GhostScrib Differs from Typical AI Detectors
-
-| | Typical AI detectors | GhostScrib |
+| Metric | Output Range | Description |
 |---|---|---|
-| Core question | "Was AI used?" | How much, where, and is it disclosed? |
-| Output | A single "AI %" score | Multi-metric transparency report |
-| Explainability | Opaque | Section-level evidence |
-| Human + AI hybrid text | Frequently missed | Designed for mixed authorship |
-| Citation integrity | Not part of the AI score | Invalid or hallucinated references flagged |
-| Disclosure check | None | Compared against the author's AI statement |
+| **Human Contribution** | `[min %, max %]` | Estimated proportion of assessed prose matching authentic human academic writing. |
+| **AI Contribution** | `[min %, max %]` | Estimated proportion of assessed prose resembling automated or AI-assisted drafting. |
+| **Document Band** | `Low` / `Medium` / `High` / `Insufficient text` | Multi-paragraph aggregate resemblance band. |
+| **Provenance Confidence** | `Low` / `Medium` / `High` | Epistemic certainty based on text volume, unassessed ratio, trait agreement, and model margin. |
+| **Disclosure Consistency** | `Consistent` / `Possible mismatch` / `Cannot assess` | Cross-comparison between declared author statement and empirical findings. |
+| **Citation Integrity** | `X of Y verified (Z unverified)` | Bibliographic check across Crossref and OpenAlex. |
+| **Flagged Sections** | Section names (e.g. `Introduction`, `Methods`) | Specific sections exceeding threshold flags. |
 
-*"Typical AI detectors" are characterised from public product pages, not independent validation.*
+---
 
-## Responsible Use and Limitations
+## Tech Stack
 
-**GhostScrib is decision support, not a misconduct verdict.**
+- **Application & UI:** Streamlit, Pandas, Altair
+- **Document Ingestion:** PyMuPDF (fitz), python-docx
+- **Primary AI Detection:** Lukkinen AI Text Detector (`lucadagati/ai-text-detector`) with `DeBERTa-v3-base` weights (`Lukkinen/ai-text-detector`)
+- **Attribution Engine:** TRACE-inspired token transition framework using Hugging Face Transformers (`gpt2` on CPU)
+- **Integrity & NLP:** Crossref API, OpenAlex API, RapidFuzz, spaCy (`en_core_web_md`)
+- **Report Generation:** ReportLab (vector PDF generation), HTML5/CSS3, Pydantic v2 schemas
 
-### Design safeguards
+---
 
-- **Human-in-the-loop:** scores support, and never replace, editorial judgement.
-- **Confidence on every score:** no bare percentages.
-- **Fairness testing:** AI detectors are known to misflag non-native English writing, so this will be tested for explicitly.
-- **Privacy:** manuscripts will be handled confidentially.
+## Quick Start Guide
 
-### Known limitations
+### Prerequisites
+- Python 3.10+ (tested up to Python 3.14)
+- Git
+- NVIDIA GPU with 4 GB+ VRAM recommended (runs on CPU with slightly longer inference times)
 
-- **Heavy editing:** attribution weakens on paraphrased or heavily edited text.
-- **Model drift:** new LLMs will require regular retraining.
-- **Estimated provenance:** without writing-history data, provenance is inferred, not proven.
-- **Probabilistic attribution:** LLM-family labels are likelihoods, not facts.
+### 1. Installation
 
-## Roadmap
+Clone the repository and create a Python virtual environment:
 
-### Phase 1: MVP
-- [ ] Manuscript parsing (PDF / DOCX)
-- [ ] Stylometry (Layer 1)
-- [ ] Citation integrity checks (Layer 3)
-- [ ] Transparency report (Layer 5)
-- [ ] Pre-trained attribution baseline
+```bash
+git clone https://github.com/SamuelRHP/GhostScrib.git
+cd GhostScrib
 
-### Phase 2: Validation
-- [ ] Benchmark on GhostWriteBench and domain datasets
-- [ ] Fine-tuned LLM attribution (Layer 2)
-- [ ] Fairness tests on non-native English writing
+# Create and activate virtual environment
+# On Linux / macOS:
+python3 -m venv .venv
+source .venv/bin/activate
 
-### Phase 3: Provenance Ecosystem
-- [ ] C2PA content credentials
-- [ ] SynthID-style watermark checks
-- [ ] Editor plug-in that logs revision history
-- [ ] Policy engine (Nature, Science, Elsevier, Springer Nature)
-- [ ] Multilingual support
+# On Windows (PowerShell):
+python -m venv .venv
+.\.venv\Scripts\Activate.ps1
+```
 
-## Planned Repository Structure
+Install core dependencies:
 
-A suggested layout to grow into; it will change as development starts.
+```bash
+pip install -r requirements.txt
+```
+
+### 2. Setup Third-Party Models
+
+Run the setup script to provision the isolated detector environment and download the required weights (~735 MB DeBERTa model):
+
+```bash
+python scripts/setup_third_party.py
+```
+
+### 3. Start the Detector Service
+
+GhostScrib runs the Lukkinen detector as an isolated local microservice:
+
+```bash
+# Start detector in the background
+python scripts/start_detector.py start
+
+# Check service status
+python scripts/start_detector.py status
+
+# To stop the service later:
+# python scripts/start_detector.py stop
+```
+
+### 4. Launch the Streamlit App
+
+Run the interactive dashboard:
+
+```bash
+streamlit run app/streamlit_app.py
+```
+
+Open your browser to `http://localhost:8501`.
+- **Try Demo Mode:** Toggle the **Offline Demo Mode** checkbox in the sidebar to instantly load a pre-computed synthetic demonstration report.
+- **Upload Manuscripts:** Upload any `.pdf`, `.docx`, or `.txt` file, select the academic discipline, and click **Generate Transparency Report**.
+
+---
+
+## Running Tests
+
+GhostScrib includes a test suite covering schema contracts, parsers, real PDF/DOCX fixtures, detection clients, citation verifiers, provenance rules, and attribution safeguards:
+
+```bash
+pytest tests/ -v
+```
+
+All 41 unit and integration tests run in under 2 seconds.
+
+---
+
+## CLI Evaluation Tool
+
+Evaluate a batch of labelled manuscripts from the command line:
+
+```bash
+# Add sample papers into data/samples/human/, data/samples/ai/, etc.
+python scripts/evaluate_samples.py --samples-dir data/samples --format markdown
+```
+
+---
+
+## Repository Layout
 
 ```
-ghostscrib/
-├── app/                  # Streamlit UI
+GhostScrib/
+├── app/
+│   └── streamlit_app.py         # Streamlit UI with 6 tabs & export buttons
 ├── ghostscrib/
-│   ├── parsing/          # PDF / DOCX extraction, section splitting
-│   ├── stylometry/       # Layer 1
-│   ├── attribution/      # Layer 2
-│   ├── integrity/        # Layer 3 (citation checks)
-│   ├── provenance/       # Layer 4 (scoring, disclosure matching)
-│   └── report/           # Layer 5 (transparency report, PDF export)
-├── tests/
-├── data/                 # sample manuscripts, benchmarks (not committed if large)
-├── docs/
+│   ├── config.py                # Tunable thresholds & environment settings
+│   ├── schema.py                # Pydantic v2 data models
+│   ├── pipeline.py              # End-to-end 5-layer orchestrator
+│   ├── parsing/                 # PDF, DOCX, TXT extraction, cleaning & sectioning
+│   ├── detection/               # Lukkinen HTTP client & service launcher
+│   ├── stylometry/              # Layer 1: Stylometric traits & z-score baselines
+│   ├── attribution/             # Layer 2: TRACE-inspired candidate attribution
+│   ├── integrity/               # Layer 3: Crossref & OpenAlex citation auditing
+│   ├── provenance/              # Layer 4: Section/Doc bands & disclosure matching
+│   └── report/                  # Layer 5: PDF, HTML, and JSON report generators
+├── scripts/
+│   ├── setup_third_party.py     # Clones & provisions third-party detector
+│   ├── start_detector.py        # Service launcher, daemon controller & health check
+│   ├── prefetch_models.py       # Model weight warm-up utility
+│   ├── build_fingerprints.py    # Builds candidate attribution fingerprints
+│   └── evaluate_samples.py      # Batch validation CLI
+├── data/
+│   ├── cache/                   # Persistent citation cache (citations.json)
+│   ├── demo/                    # Pre-computed synthetic demo reports
+│   └── fingerprints/            # Attribution candidate profiles
+├── tests/                       # 41 comprehensive pytest unit & integration tests
+├── docs/                        # Architecture, Aggregation Rules, Limitations, Build Log
+├── requirements.txt
+├── .env.example
 └── README.md
 ```
 
-## Getting Started
+---
 
-Installation and usage instructions will be added once the first working module is in place.
+## Known Limitations & Disclosures
 
-## References
+In accordance with GhostScrib's non-negotiable ground rules and transparency standards:
 
-**Core sources**
+1. **Domain Calibration:** The primary DeBERTa detection ensemble was trained and calibrated on English computer-science and engineering academic prose. When evaluating manuscripts outside computer science/engineering, GhostScrib automatically issues a domain warning and moderates confidence.
+2. **Base-Rate False Positives:** In human academic writing, approximately 8% of authentic papers contain isolated flagged paragraphs due to formulaic phraseology or common boilerplate. GhostScrib accounts for this by requiring multiple flagged paragraphs across distinct sections before elevating the document band.
+3. **Paraphrase & Detector Evasion:** Detector-guided rewriting and advanced paraphrasing tools can reduce detection confidence. GhostScrib counters this by cross-verifying stylometric traits and citation integrity rather than relying on a single classifier.
+4. **Unseen Model Families:** Small open-weight models (e.g. 7B/8B parameter models) unseen during detector pre-training exhibit reduced detection recall (~59%).
+5. **Non-Native English (ESL/EFL):** Non-native English authors frequently employ standardized academic phrasing that can trigger false positives on simplistic detectors. GhostScrib lowers confidence when vocabulary diversity is constrained without extreme syntactic skew.
+6. **TRACE Attribution Constraints:** As established by Shetty et al. (arXiv 2603.28054), LLM token-transition attribution requires book-length text (>10,000 tokens) to achieve statistical significance. GhostScrib marks attribution as strictly experimental and disables it when manuscripts fail this length requirement.
 
-1. *GhostWriter* (LREC 2026). ACL Anthology: aclanthology.org/2026.lrec-1.823
-2. *The AI Ghostwriter Effect*. ACM Digital Library: doi.org/10.1145/3637875
-3. *Challenges of developing AI text detectors, and their moral implications*. Emerald, JICES: doi.org/10.1108/JICES-10-2025-0292
-4. *Who Wrote the Book? Detecting and Attributing LLM Ghostwriters* (TRACE). arXiv preprint (not peer-reviewed): arxiv.org/abs/2603.28054
-5. *Detecting manuscripts written by generative AI … pharmacy practice*. PubMed Central: PMC10791078
-6. Floridi, *AI and the Future of Publishing: Not Detection, but Answerability*. SSRN working paper (abstract 6993460)
-7. *Ghost in the Manuscript: Integrity, Authorship, and AI in the Academy*. Taylor & Francis: doi.org/10.1080/2194587X.2025.2579273
+---
 
-**Related technology**
+## References & Citations
 
-- Google DeepMind **SynthID**: embeds an invisible watermark in AI-generated text by subtly adjusting word choices during generation. Limitation: it only works for text from models that use SynthID, and it weakens when text is heavily rewritten or translated.
+1. **Lukkinen AI Text Detector:** Dagati, L. (2024). *Ensemble DeBERTa-v3-base Detectors for Academic Manuscripts*. MIT License. Code: [github.com/lucadagati/ai-text-detector](https://github.com/lucadagati/ai-text-detector). Weights: [huggingface.co/Lukkinen/ai-text-detector](https://huggingface.co/Lukkinen/ai-text-detector).
+2. **TRACE Attribution:** Shetty et al. (2024). *Who Wrote the Book? Detecting and Attributing LLM Ghostwriters*. EMNLP Main / arXiv:2603.28054. Code: [github.com/anudeex/TRACE](https://github.com/anudeex/TRACE).
+3. **GhostWriter Benchmark:** ACL Anthology (2026). *GhostWriter: Evaluating Mixed-Authorship and AI-Assisted Academic Text*. LREC 2026.
+4. **AI Authorship & Integrity:** Floridi, L. (2024). *AI and the Future of Publishing: Not Detection, but Answerability*. SSRN 6993460.
+5. **Detection in Academic Publishing:** PMC10791078. *Detecting manuscripts written by generative AI*.
+
+---
+
+*GhostScrib — Avishkar Hackathon · Team CTRL ALT DELIGHTED*

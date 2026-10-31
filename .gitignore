@@ -1,0 +1,73 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Virtual environments
+.venv/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# Environment and secrets
+.env
+.env.local
+*.secret
+*.pem
+*.key
+
+# Model weights and caches
+*.pt
+*.bin
+*.safetensors
+*.onnx
+models/
+data/cache/
+data/reference_texts/
+data/samples/human/*
+!data/samples/human/README.md
+data/samples/ai/*
+!data/samples/ai/README.md
+data/samples/mixed/*
+!data/samples/mixed/README.md
+data/samples/non_native/*
+!data/samples/non_native/README.md
+data/samples/other_field/*
+!data/samples/other_field/README.md
+
+# Third party cloned dependencies
+third_party/
+
+# Testing and coverage
+.pytest_cache/
+.coverage
+htmlcov/
+
+# IDE and OS
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
