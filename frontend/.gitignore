@@ -1,0 +1,25 @@
+# Dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# Production build artifacts
+dist/
+build/
+
+# Testing & Coverage
+coverage/
+
+# Environment files & Secrets
+.env
+.env.local
+.env.*.local
+
+# Cache & Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.eslintcache
+
+# TypeScript build info cache
+*.tsbuildinfo
