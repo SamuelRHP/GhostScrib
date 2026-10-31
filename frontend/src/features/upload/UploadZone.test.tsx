@@ -154,3 +154,4 @@ describe("UploadZone Component", () => {
     expect(screen.getByText("Detector is offline")).toBeDefined();
   });
 });
+
