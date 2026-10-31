@@ -125,6 +125,16 @@ class JournalTransparencyReport(BaseModel):
     )
 
 
+class AssessmentStats(BaseModel):
+    paragraphs_total: int
+    paragraphs_assessed: int
+    paragraphs_skipped: int
+    words_total: int
+    words_assessed: int
+    skipped_share: float
+    insufficient_text: bool
+
+
 class Report(BaseModel):
     document: ParsedDocument
     transparency_report: JournalTransparencyReport
@@ -135,4 +145,6 @@ class Report(BaseModel):
     detector_reference_verdict: Optional[str] = None
     limitations: List[str] = Field(default_factory=list)
     metadata: Dict[str, Any] = Field(default_factory=dict)
+    synthetic: bool = False
+    assessment: Optional[AssessmentStats] = None
 

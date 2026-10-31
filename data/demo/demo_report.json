@@ -33,11 +33,26 @@
             "label": "human",
             "score": -0.84,
             "sentences": [
-              { "text": "The rapid advancement and widespread integration of generative artificial intelligence have fundamentally challenged traditional academic peer review models.", "score": -0.72 },
-              { "text": "Conventional automated detection tools rely on opaque binary classifications that fail to capture nuanced hybrid human-machine writing workflows.", "score": -0.89 },
-              { "text": "In this paper, we propose a multi-layered provenance framework designed specifically to provide evidence-based decision support for journal editors and reviewers.", "score": -0.81 },
-              { "text": "Our system integrates domain-tuned transformer ensembles, token-level transition fingerprinting, and automated bibliographic integrity verification.", "score": -0.91 },
-              { "text": "Experimental evaluations on curated computer science corpora demonstrate that our approach reliably isolates AI-assisted passages while maintaining low false-positive rates on authentic human scholarship.", "score": -0.86 }
+              {
+                "text": "The rapid advancement and widespread integration of generative artificial intelligence have fundamentally challenged traditional academic peer review models.",
+                "score": -0.72
+              },
+              {
+                "text": "Conventional automated detection tools rely on opaque binary classifications that fail to capture nuanced hybrid human-machine writing workflows.",
+                "score": -0.89
+              },
+              {
+                "text": "In this paper, we propose a multi-layered provenance framework designed specifically to provide evidence-based decision support for journal editors and reviewers.",
+                "score": -0.81
+              },
+              {
+                "text": "Our system integrates domain-tuned transformer ensembles, token-level transition fingerprinting, and automated bibliographic integrity verification.",
+                "score": -0.91
+              },
+              {
+                "text": "Experimental evaluations on curated computer science corpora demonstrate that our approach reliably isolates AI-assisted passages while maintaining low false-positive rates on authentic human scholarship.",
+                "score": -0.86
+              }
             ]
           }
         ],
@@ -61,9 +76,18 @@
             "label": "ai",
             "score": 1.28,
             "sentences": [
-              { "text": "Scientific manuscript evaluation has historically depended upon the presumption of authentic individual scholarship and rigorous intellectual ownership.", "score": 0.42 },
-              { "text": "However, modern generative models can produce fluent, mathematically plausible literature surveys and structural outlines that closely mirror genuine academic discourse.", "score": 1.34 },
-              { "text": "This phenomenon obscures the distinction between authentic intellectual contribution and automated text generation, introducing significant vulnerability into scholarly dissemination pipelines.", "score": 1.39 }
+              {
+                "text": "Scientific manuscript evaluation has historically depended upon the presumption of authentic individual scholarship and rigorous intellectual ownership.",
+                "score": 0.42
+              },
+              {
+                "text": "However, modern generative models can produce fluent, mathematically plausible literature surveys and structural outlines that closely mirror genuine academic discourse.",
+                "score": 1.34
+              },
+              {
+                "text": "This phenomenon obscures the distinction between authentic intellectual contribution and automated text generation, introducing significant vulnerability into scholarly dissemination pipelines.",
+                "score": 1.39
+              }
             ]
           },
           {
@@ -73,9 +97,18 @@
             "label": "ai",
             "score": 1.15,
             "sentences": [
-              { "text": "Furthermore, existing commercial plagiarism scanners were fundamentally architected to detect verbatim string matching rather than probabilistic text generation.", "score": 1.12 },
-              { "text": "When authors prompt large language models to draft or heavily revise theoretical frameworks, these traditional tools remain blind to synthetic prose.", "score": 1.22 },
-              { "text": "Consequently, journal editorial boards frequently receive submissions with vague or incomplete generative AI disclosure statements, lacking actionable means to verify compliance.", "score": 1.11 }
+              {
+                "text": "Furthermore, existing commercial plagiarism scanners were fundamentally architected to detect verbatim string matching rather than probabilistic text generation.",
+                "score": 1.12
+              },
+              {
+                "text": "When authors prompt large language models to draft or heavily revise theoretical frameworks, these traditional tools remain blind to synthetic prose.",
+                "score": 1.22
+              },
+              {
+                "text": "Consequently, journal editorial boards frequently receive submissions with vague or incomplete generative AI disclosure statements, lacking actionable means to verify compliance.",
+                "score": 1.11
+              }
             ]
           },
           {
@@ -85,9 +118,18 @@
             "label": "human",
             "score": -0.42,
             "sentences": [
-              { "text": "In response to these emerging publishing bottlenecks, this investigation introduces GhostScrib, a transparent decision-support architecture.", "score": -0.31 },
-              { "text": "GhostScrib decomposes manuscripts across five forensic layers, evaluating paragraph-level token probabilities, sentence structure distributions, and bibliographic cross-references.", "score": -0.48 },
-              { "text": "By delivering granular transparency reports rather than binary verdicts, the framework empowers editors to exercise informed editorial oversight.", "score": -0.46 }
+              {
+                "text": "In response to these emerging publishing bottlenecks, this investigation introduces GhostScrib, a transparent decision-support architecture.",
+                "score": -0.31
+              },
+              {
+                "text": "GhostScrib decomposes manuscripts across five forensic layers, evaluating paragraph-level token probabilities, sentence structure distributions, and bibliographic cross-references.",
+                "score": -0.48
+              },
+              {
+                "text": "By delivering granular transparency reports rather than binary verdicts, the framework empowers editors to exercise informed editorial oversight.",
+                "score": -0.46
+              }
             ]
           }
         ],
@@ -111,9 +153,18 @@
             "label": "human",
             "score": -0.65,
             "sentences": [
-              { "text": "Our empirical methodology employs a localized dual-classifier ensemble operating over academic text segments.", "score": -0.58 },
-              { "text": "We extracted feature representations using domain-tuned DeBERTa-v3 backbones trained against historical arXiv preprints.", "score": -0.71 },
-              { "text": "Each evaluated paragraph undergoes syntactic token normalization, ligature resolution, and sliding three-sentence window evaluation to calculate continuous likelihood scores.", "score": -0.66 }
+              {
+                "text": "Our empirical methodology employs a localized dual-classifier ensemble operating over academic text segments.",
+                "score": -0.58
+              },
+              {
+                "text": "We extracted feature representations using domain-tuned DeBERTa-v3 backbones trained against historical arXiv preprints.",
+                "score": -0.71
+              },
+              {
+                "text": "Each evaluated paragraph undergoes syntactic token normalization, ligature resolution, and sliding three-sentence window evaluation to calculate continuous likelihood scores.",
+                "score": -0.66
+              }
             ]
           },
           {
@@ -123,8 +174,14 @@
             "label": "human",
             "score": -0.52,
             "sentences": [
-              { "text": "To evaluate bibliographic fidelity, we designed an asynchronous querying pipeline interfacing with Crossref and OpenAlex REST interfaces.", "score": -0.48 },
-              { "text": "Reference entries extracted from the bibliography are mapped to digital object identifiers, and normalized Levenshtein similarity metrics are calculated against official indexed metadata records to identify unresolvable entries.", "score": -0.56 }
+              {
+                "text": "To evaluate bibliographic fidelity, we designed an asynchronous querying pipeline interfacing with Crossref and OpenAlex REST interfaces.",
+                "score": -0.48
+              },
+              {
+                "text": "Reference entries extracted from the bibliography are mapped to digital object identifiers, and normalized Levenshtein similarity metrics are calculated against official indexed metadata records to identify unresolvable entries.",
+                "score": -0.56
+              }
             ]
           }
         ],
@@ -148,9 +205,18 @@
             "label": "ai",
             "score": 1.18,
             "sentences": [
-              { "text": "The quantitative experimental findings reveal distinct structural deviations between autonomously generated prose and human academic composition.", "score": 1.15 },
-              { "text": "In particular, automated text frequently demonstrates uniform sentence length distribution and constrained syntactic burstiness.", "score": 1.25 },
-              { "text": "However, as frontier models continue to evolve, simple statistical metrics alone become insufficient, necessitating holistic multi-modal forensic evaluation.", "score": 1.14 }
+              {
+                "text": "The quantitative experimental findings reveal distinct structural deviations between autonomously generated prose and human academic composition.",
+                "score": 1.15
+              },
+              {
+                "text": "In particular, automated text frequently demonstrates uniform sentence length distribution and constrained syntactic burstiness.",
+                "score": 1.25
+              },
+              {
+                "text": "However, as frontier models continue to evolve, simple statistical metrics alone become insufficient, necessitating holistic multi-modal forensic evaluation.",
+                "score": 1.14
+              }
             ]
           },
           {
@@ -160,8 +226,14 @@
             "label": "uncertain",
             "score": 0.45,
             "sentences": [
-              { "text": "Furthermore, our citation audit uncovered instances where generated bibliographic citations fabricated plausible journal volume numbers and publication years for non-existent manuscripts.", "score": 0.52 },
-              { "text": "These hallucinatory bibliographic artifacts present severe risks to the cumulative integrity of scientific literature when accepted without verification.", "score": 0.38 }
+              {
+                "text": "Furthermore, our citation audit uncovered instances where generated bibliographic citations fabricated plausible journal volume numbers and publication years for non-existent manuscripts.",
+                "score": 0.52
+              },
+              {
+                "text": "These hallucinatory bibliographic artifacts present severe risks to the cumulative integrity of scientific literature when accepted without verification.",
+                "score": 0.38
+              }
             ]
           }
         ],
@@ -189,8 +261,14 @@
     "parse_warnings": []
   },
   "transparency_report": {
-    "human_contribution": [0.68, 0.76],
-    "ai_contribution": [0.24, 0.32],
+    "human_contribution": [
+      0.68,
+      0.76
+    ],
+    "ai_contribution": [
+      0.24,
+      0.32
+    ],
     "provenance_confidence": "Medium",
     "confidence_reasons": [
       "Stylometric sentence structure profile supports the detection band.",
@@ -210,11 +288,36 @@
   },
   "stylometry": {
     "structure_traits": [
-      { "trait": "sentence length, mean", "value": 24.8, "human_mean": 23.03, "z": 0.52 },
-      { "trait": "subordinate clauses per sentence", "value": 1.85, "human_mean": 1.14, "z": 2.22 },
-      { "trait": "passive %", "value": 42.1, "human_mean": 33.88, "z": 0.60 },
-      { "trait": "nominalizations per word %", "value": 9.4, "human_mean": 5.72, "z": 2.14 },
-      { "trait": "appositives/parentheses per sentence", "value": 0.98, "human_mean": 0.46, "z": 2.05 }
+      {
+        "trait": "sentence length, mean",
+        "value": 24.8,
+        "human_mean": 23.03,
+        "z": 0.52
+      },
+      {
+        "trait": "subordinate clauses per sentence",
+        "value": 1.85,
+        "human_mean": 1.14,
+        "z": 2.22
+      },
+      {
+        "trait": "passive %",
+        "value": 42.1,
+        "human_mean": 33.88,
+        "z": 0.6
+      },
+      {
+        "trait": "nominalizations per word %",
+        "value": 9.4,
+        "human_mean": 5.72,
+        "z": 2.14
+      },
+      {
+        "trait": "appositives/parentheses per sentence",
+        "value": 0.98,
+        "human_mean": 0.46,
+        "z": 2.05
+      }
     ],
     "n_extreme_traits": 3,
     "agreement": "supports",
@@ -231,7 +334,7 @@
         "std_sentence_length": 5.82,
         "burstiness": 0.24,
         "type_token_ratio": 0.74,
-        "passive_voice_rate": 0.40
+        "passive_voice_rate": 0.4
       },
       "3. Discussion and Integrity Findings": {
         "mean_sentence_length": 23.25,
@@ -311,6 +414,15 @@
   "metadata": {
     "demo": true,
     "dataset": "SYNTHETIC DEMO DATA"
+  },
+  "synthetic": true,
+  "assessment": {
+    "paragraphs_total": 9,
+    "paragraphs_assessed": 8,
+    "paragraphs_skipped": 1,
+    "words_total": 476,
+    "words_assessed": 476,
+    "skipped_share": 0.1111,
+    "insufficient_text": false
   }
 }
-
