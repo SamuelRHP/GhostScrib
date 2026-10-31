@@ -17,6 +17,9 @@ import time
 import urllib.request
 from pathlib import Path
 
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8")
+
 BASE_DIR = Path(__file__).resolve().parent.parent
 FRONTEND_DIR = BASE_DIR / "frontend"
 DIST_DIR = FRONTEND_DIR / "dist"
@@ -59,31 +62,33 @@ def main():
     print(" GhostScrib Production Server Launcher")
     print("=" * 70)
 
-    # 1. Check if dist/index.html exists; if not, build it
+    # 1. Check frontend build
     if not INDEX_HTML.exists():
-        print("[*] Production frontend bundle not found. Building web assets...")
+        print(f"[*] Production frontend build not found at: {INDEX_HTML}")
+        print("[*] Running build_web.py to compile frontend assets...")
         build_script = BASE_DIR / "scripts" / "build_web.py"
-        ret = subprocess.run([sys.executable, str(build_script)])
-        if ret.returncode != 0:
-            print("[ERROR] Failed to build web assets.", file=sys.stderr)
-            sys.exit(ret.returncode)
+        res = subprocess.run([sys.executable, str(build_script)])
+        if res.returncode != 0 or not INDEX_HTML.exists():
+            print("[ERROR] Failed to compile production frontend assets. Aborting.", file=sys.stderr)
+            sys.exit(1)
     else:
         print(f"[OK] Production frontend bundle found at: {DIST_DIR}")
 
-    # 2. Check port 8000
+    # 2. Check Port 8000 availability
     if is_port_in_use(8000):
         pid = get_pid_on_port(8000)
-        pid_str = f" (PID: {pid})" if pid else ""
-        print(f"[ERROR] Port 8000 is already in use{pid_str}.", file=sys.stderr)
-        print("Please stop the process using port 8000 before running serve.py.", file=sys.stderr)
+        print(f"[ERROR] Port 8000 is already in use by PID {pid}. Please terminate the existing process.", file=sys.stderr)
         sys.exit(1)
 
-    # 3. Check detector on 8790
+    # 3. Check / Start Lukkinen detector
     print("[*] Probing Lukkinen detector on port 8790...")
     if not is_detector_healthy(8790):
-        print("[!] Detector is not running on port 8790. Attempting to start it...")
-        detector_script = BASE_DIR / "scripts" / "start_detector.py"
-        subprocess.run([sys.executable, str(detector_script), "start", "--port", "8790"])
+        print("[!] Lukkinen detector is NOT running on port 8790.")
+        print("[*] Attempting automatic startup via scripts/start_detector.py...")
+        start_script = BASE_DIR / "scripts" / "start_detector.py"
+        subprocess.run([sys.executable, str(start_script), "start"], check=False)
+
+        # Wait up to 15 seconds for health
         for _ in range(15):
             time.sleep(1.0)
             if is_detector_healthy(8790):
@@ -97,9 +102,9 @@ def main():
     # 4. Banner
     print("-" * 70)
     print("  GhostScrib Single-Port Production Server Running!")
-    print("  🌐 App & UI:            http://127.0.0.1:8000")
-    print("  🔌 OpenAPI & Docs:      http://127.0.0.1:8000/docs")
-    print("  🤖 Detector Service:    http://127.0.0.1:8790")
+    print("  [WEB] App & UI:         http://127.0.0.1:8000")
+    print("  [API] OpenAPI & Docs:   http://127.0.0.1:8000/docs")
+    print("  [DET] Detector Service: http://127.0.0.1:8790")
     print("  Press Ctrl+C to stop the server.")
     print("-" * 70)
 
@@ -115,4 +120,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
