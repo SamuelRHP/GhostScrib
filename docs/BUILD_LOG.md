@@ -166,3 +166,31 @@ This document logs all phases, verification gates, commands executed, observed o
 - **Live Pipeline Validation**: Verified end-to-end against the running Lukkinen detector daemon.
 - Gate 7: **PASSED**.
 
+---
+
+## Phase 8: Deep Codebase Audit, Edge Case Hardening & Bug Fixes
+
+### Date: 2026-10-31
+- **Streamlit Session State Fix**:
+  - Resolved critical UI bug in `app/streamlit_app.py` where clicking export buttons or interacting with widgets triggered a script rerun, resetting `analyze_button` to `False` and causing the rendered report to vanish.
+  - Implemented persistent session state (`st.session_state.current_report` and `st.session_state.report_demo_mode`).
+  - Fixed section expander badge color so `not_assessed` sections render in neutral grey instead of green.
+- **Aggregation & Confidence Calibration**:
+  - Resolved `stylometry.agreement` bug in `ghostscrib/provenance/aggregator.py`: `stylometry.agreement` is now actively recalculated against the true computed `doc_band` rather than remaining bound to the preliminary single-pass estimate.
+  - Fixed `compute_document_band` in `ghostscrib/provenance/bands.py` to preserve true word volume sums when text falls below paragraph threshold, preventing misleading "0 words assessed" disclosures.
+- **ReportLab PDF Export Hardening**:
+  - Added XML escaping (`_esc`) across dynamic report variables in `ghostscrib/report/pdf_export.py` to prevent `ExpatError` crashes when strings contain special characters (`&`, `<`, `>`).
+- **CLI & Script Execution Robustness**:
+  - Fixed `scripts/evaluate_samples.py` argument parsing by adding `--samples-dir` and `--format` (`markdown`, `csv`, `text`), synchronizing the CLI with documentation in `README.md`.
+  - Added robust `sys.path` resolution across all standalone scripts (`evaluate_samples.py`, `build_fingerprints.py`, `prefetch_models.py`, `generate_reference_texts.py`, `start_detector.py`) and `ghostscrib/detection/launcher.py` to prevent `ModuleNotFoundError` when run from subdirectories.
+  - Enhanced `scripts/start_detector.py` with safe PID file error handling, `CREATE_BREAKAWAY_FROM_JOB` execution flags, and a dedicated `serve` foreground action.
+- **Attribution Candidate Profiles**:
+  - Populated `data/fingerprints/` with 22-dimensional reference profiles (`human_academic.json`, `gpt4_turbo.json`, `claude_sonnet.json`, `gemini_pro.json`), enabling TRACE-inspired attribution comparisons when document length criteria are satisfied.
+- **Model Storage & Integrity**:
+  - Removed stale temporary buffer (`model.tmp`) from `third_party/ai-text-detector/aidet/models/deberta-base-v2`.
+  - Resumed full background stream download of `deberta-base-v3/model.safetensors` via `curl.exe -L -C -`.
+- **Test Suite Expansion**:
+  - Created `tests/test_report.py` covering JSON, HTML, and PDF exports.
+  - All 44 tests across the entire test suite pass cleanly with zero warnings (`tests/test_report.py`, `tests/test_real_fixtures.py`, `tests/test_attribution.py`, `tests/test_integrity.py`, `tests/test_parsing.py`, `tests/test_provenance.py`, `tests/test_schema.py`, `tests/test_config.py`, `tests/test_detection_client.py`).
+- Gate 8: **PASSED**.
+
