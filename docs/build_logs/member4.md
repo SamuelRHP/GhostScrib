@@ -79,3 +79,129 @@ Audited via `git diff --name-only feat/web-integration origin/<branch>`:
 ### 4. Integration Baseline Test Status
 - `pytest tests/ -v`: 44 passed in 2.24s.
 - `frontend`: `npm run typecheck` (0 errors), `npm run test` (1 passed).
+
+
+---
+
+## Phase 1: Sequential Branch Merges
+
+**Date**: 2026-10-31  
+
+### Merge 1: `origin/feat/web-api` (Member 1)
+- Command: `git merge --no-ff origin/feat/web-api -m "Merge remote-tracking branch 'origin/feat/web-api' into feat/web-integration"`
+- Conflicts: 0 conflicts (clean merge).
+- Backend Verification:
+  - Fixed `tests/api/__init__.py` module name shadowing.
+  - Added `enqueue=False` parameter to `job_manager.submit_job()` for offline test isolation.
+  - Command: `pytest tests/ -v`
+  - Result: **69 passed in 4.93s**.
+
+### Merge 2: `origin/feat/web-ui-shell` (Member 2)
+- Command: `git merge --no-ff origin/feat/web-ui-shell -m "Merge remote-tracking branch 'origin/feat/web-ui-shell' into feat/web-integration"`
+- Conflicts: 0 conflicts (clean merge).
+- Frontend Verification:
+  - `npm run typecheck` $\to$ 0 errors.
+  - `npm run lint` $\to$ 0 errors.
+
+### Merge 3: `origin/feat/web-report-views` (Member 3)
+- Command: `git merge --no-ff origin/feat/web-report-views -m "Merge remote-tracking branch 'origin/feat/web-report-views' into feat/web-integration"`
+- Conflicts: 0 conflicts (clean merge).
+- Verification:
+  - `npm run typecheck` $\to$ 0 errors.
+  - `npm run lint` $\to$ 0 errors.
+  - `npm run test` $\to$ 13 passed across 3 test files (`demoReport.test.ts`, `DocumentViewTab.test.tsx`, `DevSandbox.test.tsx`).
+  - `npm run build` $\to$ Built production bundle in 2.09s (`dist/index.html` 0.93 kB, `dist/assets/*.js` 232.95 kB).
+  - Backend re-verification: **69 passed in 4.04s**.
+
+---
+
+## Phase 2: Contract & Type Synchronization
+
+**Date**: 2026-10-31  
+
+- Re-exported OpenAPI schema: `python scripts/export_openapi.py` $\to$ updated `docs/openapi.json`.
+- Generated TypeScript types: `npm run gen:types` $\to$ created `frontend/src/types/api.generated.ts`.
+- Synchronized frontend report interface (`frontend/src/types/report.ts`):
+  - Made `synthetic: boolean` non-optional required.
+  - Made `assessment: AssessmentStats` non-optional required.
+- Updated `frontend/src/mocks/demo_report.json` with matching `assessment` statistics block and `synthetic: true`.
+- Updated `docs/WEB_CONTRACT.md`:
+  - Closed gap analysis in Section 6 (`synthetic` and `assessment` marked as implemented).
+  - Updated Section 7 with merge completion status.
+- Verification: `npm run typecheck && npm run test` $\to$ 13 passed, 0 type errors.
+
+---
+
+## Phase 3: Cross-Platform Orchestration Scripts
+
+**Date**: 2026-10-31  
+
+Implemented three cross-platform orchestration scripts in Python:
+1. `scripts/build_web.py`:
+   - Checks `npm` executable path via `shutil.which` and Windows fallback search.
+   - Installs `frontend/node_modules` if missing.
+   - Runs `npm run build` inside `frontend/`.
+   - Verifies existence of `frontend/dist/index.html`.
+2. `scripts/dev.py`:
+   - Checks port availability for 8000, 5173, 8790 with actionable error messages identifying occupying PIDs via `psutil`.
+   - Probes Lukkinen detector on port 8790; launches it if inactive.
+   - Starts FastAPI backend (`uvicorn --reload`) and Vite dev server (`npm run dev`).
+   - Tails outputs with `[api]` and `[web]` prefixes; terminates child processes cleanly on Ctrl+C.
+3. `scripts/serve.py`:
+   - Production single-port runner.
+   - Builds web assets via `build_web.py` if `frontend/dist` is missing.
+   - Probes and starts detector microservice if down.
+   - Launches `uvicorn api.main:app --host 127.0.0.1 --port 8000` (serving both API endpoints and React SPA).
+
+---
+
+## Phase 4: Full-Stack Live Testing & Verification
+
+**Date**: 2026-10-31  
+
+Comprehensive suite implemented and verified via `scripts/verify_e2e_full.py`:
+- **Real PDF Analysis**: `data/demo/1-IJCSE-2026-7515.pdf` (1010.5 KB).
+  - Runtime: 20.1 seconds.
+  - Stages observed: `parsing` $\to$ `detection` $\to$ `scoring`.
+  - Metrics verified:
+    - Human Contribution: `[0.101, 0.363]`
+    - AI Contribution: `[0.637, 0.899]`
+    - Provenance Confidence: `Medium`
+    - Disclosure Consistency: `Possible mismatch`
+    - Citation Integrity: 24 citations verified
+    - Flagged Sections: `['1. Introduction', '2. Related Work', '5. Methodology', '6. Results and Discussion']`
+    - Document View: 6 sections, 167 paragraphs, 185 sentences
+- **Export Verification**:
+  - JSON: 138,089 bytes, valid schema.
+  - HTML: 81,606 bytes, contains `<!doctype html>`, `<title>GhostScrib`, and CSS variables.
+  - PDF: 3,685 bytes, begins with `%PDF-`.
+- **Real DOCX Manuscript**: Generated and submitted academic DOCX; completed with status `done`.
+- **Real TXT Manuscript**: Submitted academic TXT; completed with status `done`.
+- **Failure Mode Tests**:
+  - Empty file (0 bytes) $\to$ 400 `empty_file`.
+  - Corrupt PDF $\to$ 400 `unsupported_type`.
+  - Malicious `.exe` $\to$ 400 `unsupported_type`.
+  - Oversize PDF (21 MB) $\to$ 413 `file_too_large`.
+  - Scanned image-only PDF $\to$ async job status `error` with code `no_text_extracted`.
+  - Privacy: Zero stack traces, file paths, or private text in error responses.
+- **Headless Chrome Screenshots**:
+  - `docs/screenshots/web/01_landing_page.png` (28.3 KB)
+  - `docs/screenshots/web/02_analyzing_screen.png` (25.5 KB)
+  - `docs/screenshots/web/03_report_overview.png` (38.0 KB)
+  - `docs/screenshots/web/04_document_view.png` (74.4 KB)
+  - `docs/screenshots/web/05_report_real_pdf.png` (39.7 KB)
+
+---
+
+## Phase 5: Documentation & Acceptance Audit
+
+**Date**: 2026-10-31  
+
+- Updated `README.md`: Architecture diagram, quick start commands for both dev (`scripts/dev.py`) and production (`scripts/serve.py`), Streamlit fallback notes, linked screenshots.
+- Updated `docs/ARCHITECTURE.md`: Added Section 3 detailing full web architecture (FastAPI, React Vite, component hierarchy, single worker queue, design tokens).
+- Updated `docs/THIRD_PARTY.md`: Added Section 4 cataloging all front-end licenses (React, Vite, TypeScript, Lucide, Vitest, Testing Library).
+- Updated `docs/BUILD_LOG.md`: Consolidated master log with Phase 9.
+- Test Suite Summary:
+  - Backend: **69 passed, 0 failed in 4.08s**.
+  - Frontend: **13 passed, 0 failed in 2.52s**.
+  - TypeScript: **0 errors**.

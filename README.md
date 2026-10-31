@@ -3,7 +3,7 @@
 
 GhostScrib moves the question from *"Was AI used?"* to *"How much, where, and can the authorship claim be trusted?"* It produces graded, evidence-based reports for editors and reviewers instead of a simplistic binary yes/no verdict.
 
-> **Status:** **Working MVP Prototype (Verified).** This repository contains a fully functional, local-first implementation of the 5-layer GhostScrib pipeline, complete with a Streamlit interface, PyMuPDF/DOCX extraction, local DeBERTa ensemble detection, TRACE-inspired attribution, Crossref/OpenAlex citation auditing, and PDF/HTML/JSON report generation.
+> **Status:** **Full-Stack Web Application (FastAPI + React Vite) & Streamlit Prototype.** This repository contains a production-grade web application with a responsive React 18 front-end, a FastAPI asynchronous backend, and a 5-layer provenance pipeline complete with local DeBERTa ensemble detection, TRACE-inspired attribution, Crossref/OpenAlex citation auditing, and publication-ready PDF/HTML/JSON exports.
 
 ---
 
@@ -11,15 +11,16 @@ GhostScrib moves the question from *"Was AI used?"* to *"How much, where, and ca
 
 - [Core Principles & Design Stance](#core-principles--design-stance)
 - [How GhostScrib Works](#how-ghostscrib-works)
-- [Architecture & The Five Layers](#architecture--the-five-layers)
+- [Web Architecture & Service Topology](#web-architecture--service-topology)
+- [Application Screenshots](#application-screenshots)
 - [Journal Transparency Report Output](#journal-transparency-report-output)
 - [Tech Stack](#tech-stack)
 - [Quick Start Guide](#quick-start-guide)
   - [Prerequisites](#prerequisites)
   - [1. Installation](#1-installation)
   - [2. Setup Third-Party Models](#2-setup-third-party-models)
-  - [3. Start the Detector Service](#3-start-the-detector-service)
-  - [4. Launch the Streamlit App](#4-launch-the-streamlit-app)
+  - [3. Run the Web Application](#3-run-the-web-application)
+  - [4. Streamlit Fallback Prototype](#4-streamlit-fallback-prototype)
 - [Running Tests](#running-tests)
 - [CLI Evaluation Tool](#cli-evaluation-tool)
 - [Repository Layout](#repository-layout)
@@ -76,11 +77,78 @@ Layer 4: Provenance Aggregation & Confidence  (Deterministic Rules)
          - Disclosure consistency matching matrix
                        │
                        ▼
-Layer 5: Journal Transparency Report  (Streamlit / PDF / HTML / JSON)
+Layer 5: Journal Transparency Report  (React Web UI / Streamlit / PDF / HTML / JSON)
          - Interactive multi-tab evidence explorer
          - Color-blind accessible badges & sentence highlights
          - Publication-ready PDF export via ReportLab
 ```
+
+---
+
+## Web Architecture & Service Topology
+
+```
++-------------------------------------------------------------------------+
+| Browser Client                                                          |
+|  * Dev Mode:        http://127.0.0.1:5173  (Vite Dev Server)            |
+|  * Production Mode: http://127.0.0.1:8000  (FastAPI static mount)       |
++------------------------------------+------------------------------------+
+                                     |
+                                     | HTTP REST & SPA Routing
+                                     v
++-------------------------------------------------------------------------+
+| FastAPI Application (port 8000)                                         |
+|  * /api/health          - Cluster and detector service telemetry        |
+|  * /api/analyze         - Multipart upload validation & async queue     |
+|  * /api/jobs/{id}       - Stage progression & live status polling       |
+|  * /api/jobs/{id}/report- Completed JSON Transparency Report            |
+|  * /api/jobs/{id}/export- JSON / HTML / PDF report export downloads     |
+|  * /api/demo-report     - Synthetic demo report for instant evaluation  |
+|  * Single-Worker Queue  - Protects GPU VRAM from multi-tenant thrashing |
++------------------------------------+------------------------------------+
+                                     |
+                                     | Python Pipeline Calls
+                                     v
++-------------------------------------------------------------------------+
+| GhostScrib Core Pipeline (ghostscrib/)                                  |
+|  * Layer 0: PyMuPDF / python-docx multi-column parsing                  |
+|  * Layer 1: Stylometric trait profiling & z-score baselines             |
+|  * Layer 2: TRACE-inspired candidate attribution (GPT-2 CPU)            |
+|  * Layer 3: Crossref & OpenAlex bibliographic auditing                  |
+|  * Layer 4: Deterministic provenance confidence aggregation             |
+|  * Layer 5: Exporters (ReportLab PDF, standalone HTML, raw JSON)        |
++------------------------------------+------------------------------------+
+                                     |
+                                     | Loopback HTTP (127.0.0.1:8790)
+                                     v
++-------------------------------------------------------------------------+
+| Lukkinen AI Text Detector Microservice (port 8790)                      |
+|  * Dedicated venv in third_party/ai-text-detector                       |
+|  * DeBERTa-v3-base dual-model OR ensemble (~1.5 GB weights)             |
+|  * Sentence-level classification & highlight scores                     |
++-------------------------------------------------------------------------+
+```
+
+---
+
+## Application Screenshots
+
+All screenshots were captured live against the running application:
+
+### 1. Clean Landing Page & Manuscript Upload Form
+![GhostScrib Landing Page](docs/screenshots/web/01_landing_page.png)
+
+### 2. Live Asynchronous Stage Progression Screen
+![GhostScrib Analyzing Screen](docs/screenshots/web/02_analyzing_screen.png)
+
+### 3. Journal Transparency Report Overview Tab (6 Core Metrics)
+![GhostScrib Report Overview](docs/screenshots/web/03_report_overview.png)
+
+### 4. Interactive Document View Tab (Sentence-Level Highlighting)
+![GhostScrib Document View](docs/screenshots/web/04_document_view.png)
+
+### 5. Live Analysis of Real Peer-Reviewed Paper (`1-IJCSE-2026-7515.pdf`)
+![GhostScrib Real PDF Analysis](docs/screenshots/web/05_report_real_pdf.png)
 
 ---
 
@@ -102,12 +170,20 @@ The **Journal Transparency Report** provides editors and reviewers with structur
 
 ## Tech Stack
 
-- **Application & UI:** Streamlit, Pandas, Altair
-- **Document Ingestion:** PyMuPDF (fitz), python-docx
+### Web & API
+- **Backend API:** FastAPI, Uvicorn, Pydantic v2
+- **Frontend App:** React 18, Vite 5, TypeScript 5, React Router 6
+- **Styling:** Design-token CSS variables, dark/light theme support
+- **Icons:** Lucide React
+- **Frontend Testing:** Vitest, React Testing Library, jsdom
+
+### Core Forensic Engine
+- **Document Ingestion:** PyMuPDF (`fitz`), python-docx
 - **Primary AI Detection:** Lukkinen AI Text Detector (`lucadagati/ai-text-detector`) with `DeBERTa-v3-base` weights (`Lukkinen/ai-text-detector`)
 - **Attribution Engine:** TRACE-inspired token transition framework using Hugging Face Transformers (`gpt2` on CPU)
 - **Integrity & NLP:** Crossref API, OpenAlex API, RapidFuzz, spaCy (`en_core_web_md`)
 - **Report Generation:** ReportLab (vector PDF generation), HTML5/CSS3, Pydantic v2 schemas
+- **Fallback Prototype:** Streamlit, Altair
 
 ---
 
@@ -115,6 +191,7 @@ The **Journal Transparency Report** provides editors and reviewers with structur
 
 ### Prerequisites
 - Python 3.10+ (tested up to Python 3.14)
+- Node.js 20+ LTS and npm
 - Git
 - NVIDIA GPU with 4 GB+ VRAM recommended (runs on CPU with slightly longer inference times)
 
@@ -144,50 +221,78 @@ pip install -r requirements.txt
 
 ### 2. Setup Third-Party Models
 
-Run the setup script to provision the isolated detector environment and download the required weights (~735 MB DeBERTa model):
+Provision the isolated detector environment and download the DeBERTa model weights (~735 MB):
 
 ```bash
 python scripts/setup_third_party.py
 ```
 
-### 3. Start the Detector Service
+### 3. Run the Web Application
 
-GhostScrib runs the Lukkinen detector as an isolated local microservice:
+GhostScrib provides two cross-platform orchestration scripts that run identically on Windows, macOS, and Linux:
+
+#### Option A: Production Single-Port Runner (Judge-Ready Demo)
+
+Builds the frontend bundle (if missing), starts the detector service, and serves the unified web application on a single port:
 
 ```bash
-# Start detector in the background
-python scripts/start_detector.py start
-
-# Check service status
-python scripts/start_detector.py status
-
-# To stop the service later:
-# python scripts/start_detector.py stop
+python scripts/serve.py
 ```
 
-### 4. Launch the Streamlit App
+Open your browser to **`http://127.0.0.1:8000`**.  
+- **Instant Demo:** Click **Demo Report** in the header to view a complete synthetic report without uploading.
+- **Upload Manuscripts:** Drag-and-drop any `.pdf`, `.docx`, or `.txt` manuscript on the homepage to start live analysis.
+- **API Documentation:** Interactive Swagger documentation is available at **`http://127.0.0.1:8000/docs`**.
 
-Run the interactive dashboard:
+#### Option B: Development Dual-Server Runner
+
+Starts the detector microservice (port 8790), the FastAPI backend with live reload (port 8000), and the Vite dev server with hot module replacement (port 5173):
 
 ```bash
+python scripts/dev.py
+```
+
+Open your browser to **`http://127.0.0.1:5173`**.
+
+### 4. Streamlit Fallback Prototype
+
+The original Streamlit prototype remains fully operational as a fallback demo:
+
+```bash
+# Ensure detector is running
+python scripts/start_detector.py start
+
+# Launch Streamlit
 streamlit run app/streamlit_app.py
 ```
 
 Open your browser to `http://localhost:8501`.
-- **Try Demo Mode:** Toggle the **Offline Demo Mode** checkbox in the sidebar to instantly load a pre-computed synthetic demonstration report.
-- **Upload Manuscripts:** Upload any `.pdf`, `.docx`, or `.txt` file, select the academic discipline, and click **Generate Transparency Report**.
 
 ---
 
 ## Running Tests
 
-GhostScrib includes a test suite covering schema contracts, parsers, real PDF/DOCX fixtures, detection clients, citation verifiers, provenance rules, and attribution safeguards:
+GhostScrib includes comprehensive automated test suites for both backend and frontend:
 
+### Backend Tests (pytest)
 ```bash
 pytest tests/ -v
 ```
+*69 unit and integration tests covering REST endpoints, async job lifecycle, error handling, document extractors, stylometry, citation integrity, and attribution safeguards.*
 
-All 41 unit and integration tests run in under 2 seconds.
+### Frontend Tests (Vitest)
+```bash
+cd frontend
+npm run typecheck
+npm run test
+```
+*TypeScript type-checking and component-level unit tests covering tabs, highlights, filter controls, and developer sandbox.*
+
+### Live End-to-End Verification
+```bash
+python scripts/verify_e2e_full.py
+```
+*Executes the complete live pipeline against real PDF, DOCX, and TXT manuscripts, verifies exports, checks all failure modes, and captures browser screenshots.*
 
 ---
 
@@ -196,7 +301,6 @@ All 41 unit and integration tests run in under 2 seconds.
 Evaluate a batch of labelled manuscripts from the command line:
 
 ```bash
-# Add sample papers into data/samples/human/, data/samples/ai/, etc.
 python scripts/evaluate_samples.py --samples-dir data/samples --format markdown
 ```
 
@@ -206,9 +310,21 @@ python scripts/evaluate_samples.py --samples-dir data/samples --format markdown
 
 ```
 GhostScrib/
-├── app/
-│   └── streamlit_app.py         # Streamlit UI with 6 tabs & export buttons
-├── ghostscrib/
+├── api/                         # FastAPI backend service
+│   ├── main.py                  # Application entry point & SPA static mount
+│   ├── job_manager.py           # Thread-safe async job queue & worker thread
+│   ├── validation.py            # Upload security & header validation
+│   ├── errors.py                # Standard error envelope models
+│   └── routes/                  # REST route controllers (analyze, jobs, export, health, demo)
+├── frontend/                    # React 18 + Vite 5 + TypeScript SPA
+│   ├── src/
+│   │   ├── pages/               # HomePage, AnalyzingPage, ReportPage, AboutPage, DevSandbox
+│   │   ├── features/report/     # OverviewTab, ExportBar, tabs/ (Document, Citations, etc.)
+│   │   ├── api/                 # Strongly-typed API client & mock runner
+│   │   └── types/               # Generated and canonical TypeScript report models
+│   ├── package.json
+│   └── vite.config.ts
+├── ghostscrib/                  # Core 5-layer forensic engine
 │   ├── config.py                # Tunable thresholds & environment settings
 │   ├── schema.py                # Pydantic v2 data models
 │   ├── pipeline.py              # End-to-end 5-layer orchestrator
@@ -219,20 +335,21 @@ GhostScrib/
 │   ├── integrity/               # Layer 3: Crossref & OpenAlex citation auditing
 │   ├── provenance/              # Layer 4: Section/Doc bands & disclosure matching
 │   └── report/                  # Layer 5: PDF, HTML, and JSON report generators
+├── app/
+│   └── streamlit_app.py         # Streamlit UI fallback demo
 ├── scripts/
+│   ├── dev.py                   # Development dual-server launcher
+│   ├── serve.py                 # Production single-port launcher
+│   ├── build_web.py             # Frontend production bundle builder
 │   ├── setup_third_party.py     # Clones & provisions third-party detector
-│   ├── start_detector.py        # Service launcher, daemon controller & health check
-│   ├── prefetch_models.py       # Model weight warm-up utility
-│   ├── build_fingerprints.py    # Builds candidate attribution fingerprints
-│   └── evaluate_samples.py      # Batch validation CLI
-├── data/
-│   ├── cache/                   # Persistent citation cache (citations.json)
-│   ├── demo/                    # Pre-computed synthetic demo reports
-│   └── fingerprints/            # Attribution candidate profiles
-├── tests/                       # 41 comprehensive pytest unit & integration tests
-├── docs/                        # Architecture, Aggregation Rules, Limitations, Build Log
+│   ├── start_detector.py        # Detector service controller & health probe
+│   └── export_openapi.py        # Exports OpenAPI JSON specification
+├── docs/                        # Architecture, Contract, Third-Party Notices, Build Logs
+│   ├── ARCHITECTURE.md          # End-to-end system and web architecture
+│   ├── WEB_CONTRACT.md          # Shared API & frontend contract
+│   ├── THIRD_PARTY.md           # Open-source attributions and licenses
+│   └── screenshots/web/         # Live application screenshots
 ├── requirements.txt
-├── .env.example
 └── README.md
 ```
 

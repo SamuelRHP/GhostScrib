@@ -194,3 +194,72 @@ This document logs all phases, verification gates, commands executed, observed o
   - All 44 tests across the entire test suite pass cleanly with zero warnings (`tests/test_report.py`, `tests/test_real_fixtures.py`, `tests/test_attribution.py`, `tests/test_integrity.py`, `tests/test_parsing.py`, `tests/test_provenance.py`, `tests/test_schema.py`, `tests/test_config.py`, `tests/test_detection_client.py`).
 - Gate 8: **PASSED**.
 
+
+
+---
+
+## Phase 9: Web Architecture Integration, Orchestration & Live Verification
+
+### Date: 2026-10-31
+**Agent Role:** Member 4 (Integration & Verification)  
+**Branch:** `feat/web-integration`
+
+### 1. Parallel Multi-Agent Integration
+- **Preflight & Ownership Boundaries:**
+  - Audited branch diffs across all three parallel branches (`origin/feat/web-api`, `origin/feat/web-ui-shell`, `origin/feat/web-report-views`). Zero out-of-boundary modifications detected across 51 changed files.
+  - Baseline SHA invariant maintained on `origin/main` and `origin/feat/mvp-pipeline` (`8624bc2209502636b75871064f7f17562c6acc1a`).
+- **Sequential Non-Fast-Forward Merges:**
+  1. `origin/feat/web-api` (`34e129f7828c3a6070d4c78c708350d9614d57c0`): Merged cleanly with 0 conflicts. Pytest backend test suite passed: **69 passed in 4.93s**.
+  2. `origin/feat/web-ui-shell` (`deb99f8c86038672320e8cfea8bfa668dc4e22b8`): Merged cleanly with 0 conflicts. Frontend checks passed (`npm run typecheck`, `npm run lint`).
+  3. `origin/feat/web-report-views` (`d79091485b212ccb66e3ee8cb35c7ed93e0fc9fc`): Merged cleanly with 0 conflicts. Vitest suite passed: **13 passed across 3 test files**.
+
+### 2. Contract & TypeScript Synchronization
+- Re-exported OpenAPI specification via `scripts/export_openapi.py` $\to$ `docs/openapi.json`.
+- Generated TypeScript types via `npm run gen:types` $\to$ `frontend/src/types/api.generated.ts`.
+- Synchronized canonical `Report` interface in `frontend/src/types/report.ts` making `synthetic: boolean` and `assessment: AssessmentStats` non-optional required fields.
+- Updated `frontend/src/mocks/demo_report.json` to include valid `assessment` block and `synthetic: true`.
+- Updated `docs/WEB_CONTRACT.md` reflecting closed status of Section 6 and completed merge status of Section 7.
+
+### 3. Cross-Platform Orchestration Scripts
+- Built `scripts/build_web.py`: Validates `node_modules`, runs `npm run build`, and verifies `frontend/dist/index.html`.
+- Built `scripts/dev.py`: Verifies ports 8000/5173/8790, auto-probes detector, starts uvicorn in reload mode and Vite in dev mode, streaming prefixed logs with clean Ctrl+C child termination.
+- Built `scripts/serve.py`: Production-ready single-port runner. Compiles web bundle if missing, verifies detector, and starts uvicorn serving both API and React SPA on `http://127.0.0.1:8000`.
+
+### 4. End-to-End Live Verification (`scripts/verify_e2e_full.py`)
+- Executed against the running FastAPI production server and Lukkinen detector:
+  - **Service Health:** `GET /api/health` returned 200 OK (`api: ok`, `detector: healthy`).
+  - **SPA Serving:** `GET /`, `GET /about`, `GET /report/demo`, `GET /dev/sandbox` all served React index.html.
+  - **Real PDF Processing:** Analyzed real peer-reviewed paper `1-IJCSE-2026-7515.pdf` (1010.5 KB). Completed in 20.1s through stages `parsing` $\to$ `detection` $\to$ `scoring`.
+    - Document Band: High
+    - Human Contribution: `[0.101, 0.363]`
+    - AI Contribution: `[0.637, 0.899]`
+    - Provenance Confidence: `Medium`
+    - Disclosure Consistency: `Possible mismatch`
+    - Citation Integrity: 24 total references checked
+    - Document View: 6 sections, 167 paragraphs, 185 sentences
+    - Assessment: 167 paragraphs total, 52 assessed
+  - **Export Downloads Verified:**
+    - JSON export: 138,089 bytes, valid schema version
+    - HTML export: 81,606 bytes, valid `<!doctype html>`, CSS styling
+    - PDF export: 3,685 bytes, valid `%PDF-` header
+  - **Real DOCX Manuscript:** Created and analyzed academic DOCX via `python-docx`. Verified completed report.
+  - **Real TXT Manuscript:** Created and analyzed structured TXT paper. Verified completed report.
+  - **Error Envelopes & Failure Modes:**
+    - Empty file (0 bytes) $\to$ 400 `empty_file`.
+    - Corrupt file $\to$ 400 `unsupported_type`.
+    - Unsupported file (`.exe`) $\to$ 400 `unsupported_type`.
+    - Oversize file (21 MB) $\to$ 413 `file_too_large`.
+    - Image-only scanned PDF $\to$ async job status `error` with code `no_text_extracted`.
+    - Privacy: Verified zero stack traces, file paths, or private text in error responses.
+  - **Live Headless Chrome Screenshots:** Captured and saved to `docs/screenshots/web/`:
+    - `01_landing_page.png`
+    - `02_analyzing_screen.png`
+    - `03_report_overview.png`
+    - `04_document_view.png`
+    - `05_report_real_pdf.png`
+
+### 5. Gate Verification Status
+- Backend Test Suite: **69 passed, 0 failed in 4.08s**.
+- Frontend Test Suite: **13 passed, 0 failed in 2.52s**.
+- Frontend Typecheck: **0 TypeScript errors**.
+- Gate 9: **PASSED**.

@@ -38,3 +38,19 @@ GhostScrib integrates and builds upon the following open-source projects, models
 - **Pydantic:** MIT License - Data validation and contract modeling.
 - **Requests & Urllib3:** Apache 2.0 / MIT License - HTTP communications for Crossref and OpenAlex.
 
+
+
+---
+
+## 4. Front-End Web Libraries & Tooling
+
+The GhostScrib web user interface integrates the following client-side libraries:
+
+- **React (`react`, `react-dom`):** MIT License (Meta Platforms, Inc.) - UI component rendering engine.
+- **Vite:** MIT License (Evan You & Vite Contributors) - Next-generation frontend build tooling and dev server.
+- **TypeScript:** Apache 2.0 License (Microsoft Corporation) - Type safety and contract enforcement.
+- **React Router (`react-router-dom`):** MIT License (Shopify / Remix Software) - Declarative client-side routing.
+- **Lucide React (`lucide-react`):** ISC License (Lucide Project) - Accessible SVG icons.
+- **Vitest:** MIT License (Vitest Team) - High-performance unit and component testing.
+- **React Testing Library & DOM Testing Library:** MIT License (Kent C. Dodds & Testing Library Contributors) - Accessible component test utilities.
+- **jsdom:** MIT License (Domenic Denicola) - Pure JavaScript DOM implementation for Node.js unit tests.
