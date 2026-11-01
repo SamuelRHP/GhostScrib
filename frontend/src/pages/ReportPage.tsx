@@ -98,10 +98,10 @@ export default function ReportPage({ initialReport }: { initialReport?: Report }
           }}
         />
         <style>{`@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }`}</style>
-        <h2 style={{ fontSize: "var(--font-size-xl)", margin: "0 0 var(--spacing-2) 0" }}>
+        <h2 style={{ fontSize: "var(--font-size-xl)", margin: "0 0 var(--spacing-2) 0", color: "var(--color-text)" }}>
           Loading Analysis Report...
         </h2>
-        <p style={{ color: "var(--color-text-secondary)", margin: 0 }}>
+        <p style={{ color: "var(--color-text-muted)", margin: 0 }}>
           Retrieving complete provenance data for Job <code>{jobId}</code>
         </p>
       </div>
@@ -121,22 +121,22 @@ export default function ReportPage({ initialReport }: { initialReport?: Report }
         <div
           style={{
             padding: "var(--spacing-6)",
-            backgroundColor: "var(--color-band-high-bg)",
-            border: "1px solid var(--color-band-high-border)",
-            borderRadius: "var(--radius-lg)",
+            backgroundColor: "var(--color-amber-bg)",
+            border: "1px solid var(--color-amber-border)",
+            borderRadius: "var(--radius-card)",
             marginBottom: "var(--spacing-6)",
           }}
         >
           <h2
             style={{
               fontSize: "var(--font-size-xl)",
-              color: "var(--color-band-high-text)",
+              color: "var(--color-amber-text)",
               margin: "0 0 var(--spacing-2) 0",
             }}
           >
             Unable to Load Report
           </h2>
-          <p style={{ color: "var(--color-band-high-text)", margin: 0 }}>
+          <p style={{ color: "var(--color-amber-text)", margin: 0 }}>
             {error || "Report not found or incomplete."}
           </p>
         </div>
@@ -148,8 +148,8 @@ export default function ReportPage({ initialReport }: { initialReport?: Report }
                 padding: "var(--spacing-2) var(--spacing-4)",
                 backgroundColor: "var(--color-bg-card)",
                 border: "1px solid var(--color-border)",
-                borderRadius: "var(--radius-md)",
-                color: "var(--color-text-primary)",
+                borderRadius: "var(--radius-control)",
+                color: "var(--color-text)",
                 textDecoration: "none",
                 fontSize: "var(--font-size-sm)",
               }}
@@ -162,8 +162,8 @@ export default function ReportPage({ initialReport }: { initialReport?: Report }
             style={{
               padding: "var(--spacing-2) var(--spacing-4)",
               backgroundColor: "var(--color-primary)",
-              color: "#ffffff",
-              borderRadius: "var(--radius-md)",
+              color: "var(--color-text-on-dark)",
+              borderRadius: "var(--radius-control)",
               textDecoration: "none",
               fontSize: "var(--font-size-sm)",
             }}
@@ -176,15 +176,26 @@ export default function ReportPage({ initialReport }: { initialReport?: Report }
   }
 
   return (
-    <div style={{ padding: "var(--spacing-8)", maxWidth: "1100px", margin: "0 auto" }}>
+    <div style={{ padding: "var(--spacing-8) var(--spacing-6)", maxWidth: "var(--container-max)", margin: "0 auto" }}>
       {/* Header & Export Bar */}
       <div style={{ marginBottom: "var(--spacing-6)" }}>
-        <h1 style={{ margin: "0 0 var(--spacing-2) 0", fontSize: "var(--font-size-2xl)" }}>
-          Journal Transparency Report
-        </h1>
-        <p style={{ margin: "0 0 var(--spacing-4) 0", color: "var(--color-text-secondary)" }}>
-          Decision support for editors, not an automated misconduct verdict.
-        </p>
+        <div
+          style={{
+            padding: "var(--spacing-5) var(--spacing-6)",
+            backgroundColor: "var(--color-bg-card)",
+            border: "1px solid var(--color-border)",
+            borderRadius: "var(--radius-card)",
+            boxShadow: "var(--shadow-card)",
+            marginBottom: "var(--spacing-4)",
+          }}
+        >
+          <h1 style={{ margin: "0 0 var(--spacing-1) 0", fontSize: "var(--font-size-2xl)", color: "var(--color-text)" }}>
+            Journal Transparency Report
+          </h1>
+          <p style={{ margin: 0, color: "var(--color-text-muted)", fontSize: "var(--font-size-sm)" }}>
+            Decision support for editors, not an automated misconduct verdict.
+          </p>
+        </div>
         <ExportBar report={report} jobId={jobId} />
       </div>
 
@@ -210,10 +221,11 @@ export default function ReportPage({ initialReport }: { initialReport?: Report }
                 border: "none",
                 borderBottom: isActive ? "3px solid var(--color-primary)" : "3px solid transparent",
                 fontWeight: isActive ? "var(--font-weight-semibold)" : "var(--font-weight-normal)",
-                color: isActive ? "var(--color-primary)" : "var(--color-text-secondary)",
+                color: isActive ? "var(--color-primary)" : "var(--color-text-muted)",
                 cursor: "pointer",
                 fontSize: "var(--font-size-sm)",
                 whiteSpace: "nowrap",
+                transition: "color 0.15s, border-color 0.15s",
               }}
             >
               {tab.label}

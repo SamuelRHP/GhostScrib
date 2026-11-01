@@ -1,43 +1,97 @@
-/* GhostScrib Design Tokens (Neutral Theme) */
+/* GhostScrib Design Tokens (Figma Design System) */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
 :root {
-  /* Colors - Base & Surfaces */
-  --color-bg-app: #f8fafc;
-  --color-bg-card: #ffffff;
-  --color-bg-card-muted: #f1f5f9;
-  --color-bg-sidebar: #0f172a;
-  
-  /* Text & Inks */
-  --color-text-primary: #0f172a;
-  --color-text-secondary: #475569;
-  --color-text-muted: #64748b;
-  --color-text-on-dark: #f8fafc;
-  --color-border: #e2e8f0;
-  --color-border-subtle: #cbd5e1;
+  /* Core Brand & Palette */
+  --color-primary: #147D64;        /* buttons, logo, links, icon strokes */
+  --color-primary-hover: #0E614D;  /* darker hover state */
+  --color-text: #172723;           /* headings, high-contrast dark text */
+  --color-text-muted: #64716C;     /* body text, secondary captions */
+  --color-text-faint: #A3BBB0;     /* icons and decoration ONLY; fails contrast for text */
+  --color-mint: #AEEBCF;           /* highlights, accents on dark bands */
+  --color-mint-pale: #E2F3EA;      /* chips, badges, highlighted cards */
+  --color-border: #DFE6E2;         /* card and divider lines */
+  --color-surface: #F0F4F1;        /* quiet panels, inner cards */
+  --color-bg: #FAFBFA;             /* page background */
+  --color-band-tint: #ECF4EE;      /* alternating tinted section */
+  --color-dark: #102A24;           /* full-width dark band */
+  --color-dark-card: #19382F;      /* cards on the dark band */
+  --color-dark-border: #355247;    /* borders on the dark band ONLY; no text (1.8:1) */
 
-  /* Accent & Action */
-  --color-primary: #2563eb;
-  --color-primary-hover: #1d4ed8;
-  --color-primary-bg: #eff6ff;
+  /* Status Colors */
+  --color-amber-bg: #FBF0DB;       /* "review suggested" / uncertain chip */
+  --color-amber-text: #986422;     /* text on amber chip (bold or 14px+) */
+  --color-amber-text-body: #96621F;/* darkened amber for normal regular body text (4.6:1 AA) */
+  --color-amber-border: #E8D0A7;   /* solid border for AI-like / review suggested */
 
-  /* Provenance Status Bands */
-  --color-band-low-bg: #dcfce7;
-  --color-band-low-text: #166534;
-  --color-band-low-border: #86efac;
+  /* Semantic Status Mappings */
+  --color-status-ai-bg: var(--color-amber-bg);
+  --color-status-ai-text: var(--color-amber-text);
+  --color-status-ai-border: var(--color-amber-border);
 
-  --color-band-med-bg: #fef3c7;
-  --color-band-med-text: #92400e;
-  --color-band-med-border: #fcd34d;
+  --color-status-uncertain-bg: var(--color-surface);
+  --color-status-uncertain-text: var(--color-text);
+  --color-status-uncertain-border: var(--color-border);
 
-  --color-band-high-bg: #fee2e2;
-  --color-band-high-text: #991b1b;
-  --color-band-high-border: #fca5a5;
+  --color-status-human-bg: var(--color-mint-pale);
+  --color-status-human-text: var(--color-primary);
+  --color-status-human-border: var(--color-mint);
 
-  --color-band-neutral-bg: #f1f5f9;
-  --color-band-neutral-text: #475569;
-  --color-band-neutral-border: #cbd5e1;
+  --color-status-not-assessed-bg: var(--color-bg);
+  --color-status-not-assessed-text: var(--color-text-muted);
+  --color-status-not-assessed-border: var(--color-border);
 
-  /* Typography */
-  --font-family-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  /* Provenance Confidence Bands */
+  --color-band-low-bg: var(--color-amber-bg);
+  --color-band-low-text: var(--color-amber-text);
+  --color-band-low-border: var(--color-amber-border);
+
+  --color-band-med-bg: var(--color-surface);
+  --color-band-med-text: var(--color-text);
+  --color-band-med-border: var(--color-border);
+
+  --color-band-high-bg: var(--color-mint-pale);
+  --color-band-high-text: var(--color-primary);
+  --color-band-high-border: var(--color-mint);
+
+  --color-band-neutral-bg: var(--color-surface);
+  --color-band-neutral-text: var(--color-text-muted);
+  --color-band-neutral-border: var(--color-border);
+
+  /* Legacy / Compatibility Aliases */
+  --color-bg-app: var(--color-bg);
+  --color-bg-card: #FFFFFF;
+  --color-bg-card-muted: var(--color-surface);
+  --color-bg-sidebar: var(--color-dark);
+  --color-text-primary: var(--color-text);
+  --color-text-secondary: var(--color-text-muted);
+  --color-text-on-dark: #FFFFFF;
+  --color-border-subtle: var(--color-border);
+  --color-primary-bg: var(--color-mint-pale);
+
+  /* Radii */
+  --radius-card: 14px;
+  --radius-control: 8px;
+  --radius-pill: 13.5px;
+  --radius-chip: 6px;
+  --radius-sm: 4px;
+  --radius-md: var(--radius-chip);
+  --radius-lg: var(--radius-control);
+  --radius-xl: var(--radius-card);
+  --radius-full: 9999px;
+
+  /* Shadows (Single soft shadow style, no heavy drop shadows) */
+  --shadow-card: 0 18px 60px rgba(24, 57, 43, 0.07);
+  --shadow-sm: 0 1px 3px rgba(24, 57, 43, 0.04);
+  --shadow-md: 0 4px 12px rgba(24, 57, 43, 0.05);
+  --shadow-lg: var(--shadow-card);
+
+  /* Layout Containers */
+  --container-max: 1264px;
+
+  /* Typography Scale */
+  --font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-family-sans: var(--font-family);
   --font-family-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
 
   --font-size-xs: 0.75rem;    /* 12px */
@@ -47,13 +101,15 @@
   --font-size-xl: 1.25rem;    /* 20px */
   --font-size-2xl: 1.5rem;    /* 24px */
   --font-size-3xl: 1.875rem;  /* 30px */
+  --font-size-4xl: 2.25rem;   /* 36px */
+  --font-size-5xl: 3rem;      /* 48px */
 
   --font-weight-normal: 400;
   --font-weight-medium: 500;
   --font-weight-semibold: 600;
   --font-weight-bold: 700;
 
-  /* Spacing */
+  /* Spacing Scale */
   --spacing-1: 0.25rem;   /* 4px */
   --spacing-2: 0.5rem;    /* 8px */
   --spacing-3: 0.75rem;   /* 12px */
@@ -63,31 +119,57 @@
   --spacing-8: 2rem;      /* 32px */
   --spacing-10: 2.5rem;   /* 40px */
   --spacing-12: 3rem;     /* 48px */
-
-  /* Borders & Radii */
-  --radius-sm: 0.25rem;   /* 4px */
-  --radius-md: 0.375rem;  /* 6px */
-  --radius-lg: 0.5rem;    /* 8px */
-  --radius-xl: 0.75rem;   /* 12px */
-  --radius-full: 9999px;
-
-  /* Shadows */
-  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
-  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
-  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1);
+  --spacing-16: 4rem;     /* 64px */
 }
 
-/* Global Reset */
+/* Global Reset & Base */
 *, *::before, *::after {
   box-sizing: border-box;
 }
 
-body {
+html, body {
   margin: 0;
   padding: 0;
-  font-family: var(--font-family-sans);
-  background-color: var(--color-bg-app);
-  color: var(--color-text-primary);
+  background-color: var(--color-bg);
+  color: var(--color-text);
+  font-family: var(--font-family);
+  font-size: 16px;
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Interactive elements & Focus */
+button, input, select, textarea {
+  font-family: inherit;
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+/* Links */
+a {
+  color: var(--color-primary);
+  text-decoration: none;
+}
+a:hover {
+  text-decoration: underline;
+}
+
+/* Utility Containers */
+.container {
+  max-width: var(--container-max);
+  margin-left: auto;
+  margin-right: auto;
+  padding-left: var(--spacing-6);
+  padding-right: var(--spacing-6);
+}
+
+@media (max-width: 640px) {
+  .container {
+    padding-left: var(--spacing-4);
+    padding-right: var(--spacing-4);
+  }
 }
