@@ -229,7 +229,7 @@ python scripts/setup_third_party.py
 
 ### 3. Run the Web Application
 
-GhostScrib provides two cross-platform orchestration scripts that run identically on Windows, macOS, and Linux:
+GhostScrib provides cross-platform orchestration scripts that run identically on Windows, macOS, and Linux:
 
 #### Option A: Production Single-Port Runner (Judge-Ready Demo)
 
@@ -253,6 +253,24 @@ python scripts/dev.py
 ```
 
 Open your browser to **`http://127.0.0.1:5173`**.
+
+#### Building Web Assets Directly
+
+To compile the production React application bundle independently (used by `scripts/serve.py`):
+
+```bash
+python scripts/build_web.py
+```
+
+#### Managing the AI Text Detector Service Directly
+
+Control or verify the local DeBERTa-v3 detector microservice on port 8790 independently:
+
+```bash
+python scripts/start_detector.py status
+python scripts/start_detector.py start
+python scripts/start_detector.py stop
+```
 
 ### 4. Streamlit Fallback Prototype
 
@@ -278,7 +296,7 @@ GhostScrib includes comprehensive automated test suites for both backend and fro
 ```bash
 pytest tests/ -v
 ```
-*69 unit and integration tests covering REST endpoints, async job lifecycle, error handling, document extractors, stylometry, citation integrity, and attribution safeguards.*
+*82 unit and integration tests covering REST endpoints, async job lifecycle, error handling, document extractors, stylometry, citation integrity, coverage metrics, and attribution safeguards.*
 
 ### Frontend Tests (Vitest)
 ```bash
@@ -286,7 +304,7 @@ cd frontend
 npm run typecheck
 npm run test
 ```
-*TypeScript type-checking and component-level unit tests covering tabs, highlights, filter controls, and developer sandbox.*
+*57 tests across 11 test files covering TypeScript type-checking, tabs, highlights, filter controls, landing page, and developer sandbox.*
 
 ### Live End-to-End Verification
 ```bash
