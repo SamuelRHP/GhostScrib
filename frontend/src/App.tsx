@@ -1,5 +1,6 @@
 import React from "react";
 import { BrowserRouter, Routes, Route, Link, useLocation } from "react-router-dom";
+import LandingPage from "@/pages/LandingPage";
 import HomePage from "@/pages/HomePage";
 import AnalyzingPage from "@/pages/AnalyzingPage";
 import ReportPage from "@/pages/ReportPage";
@@ -10,7 +11,8 @@ function NavigationHeader(): React.ReactElement {
   const location = useLocation();
 
   const navItems = [
-    { label: "Upload", path: "/" },
+    { label: "Home", path: "/" },
+    { label: "Analyse", path: "/analyze" },
     { label: "Demo Report", path: "/report/demo" },
     { label: "About", path: "/about" },
     { label: "Dev Sandbox", path: "/dev/sandbox" },
@@ -110,7 +112,9 @@ export default function App(): React.ReactElement {
       {/* Main Content Viewport */}
       <main style={{ minHeight: "calc(100vh - 70px)" }}>
         <Routes>
-          <Route path="/" element={<HomePage />} />
+          <Route path="/" element={<LandingPage />} />
+          <Route path="/analyze" element={<HomePage />} />
+          <Route path="/upload" element={<HomePage />} />
           <Route path="/analyzing/:jobId" element={<AnalyzingPage />} />
           <Route path="/report/:jobId" element={<ReportPage />} />
           <Route path="/about" element={<AboutPage />} />
