@@ -102,3 +102,4 @@ Audited via standard relative luminance formula $L = 0.2126 \cdot R + 0.7152 \cd
 | ↳ Limitations | `frontend/src/features/report/tabs/LimitationsTab.tsx` | `theme.css` | Explicit disclaimer cards, boundary constraints, ESL notes. |
 | `/about` | `frontend/src/pages/AboutPage.tsx` | `theme.css` | Architecture overview, 5-layer pipeline explanation, privacy policy. |
 | `/dev/sandbox` | `frontend/src/pages/DevSandbox.tsx` | `DevSandbox.module.css` | Adversarial text fixture testing suite with escaped preview. |
+
