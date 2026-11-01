@@ -114,4 +114,20 @@ describe("OverviewTab Component", () => {
     expect(banner.textContent).toContain("Caution: Domain & Data Limitations");
     expect(banner.textContent).toContain("classified as \"other\"");
   });
+
+  it("shows body-prose words assessed coverage metric in Assessment Scope (Req 2)", () => {
+    const reportWithBodyCoverage: Report = {
+      ...demoReport,
+      assessment: {
+        ...demoReport.assessment,
+        body_prose_words_total: 2000,
+        body_prose_words_assessed: 1800,
+        body_prose_skipped_share: 0.10,
+      },
+    };
+    render(<OverviewTab report={reportWithBodyCoverage} />);
+
+    const stat = screen.getByTestId("body-prose-coverage-stat");
+    expect(stat.textContent).toBe("90% of body-prose words assessed (1,800 of 2,000 words)");
+  });
 });

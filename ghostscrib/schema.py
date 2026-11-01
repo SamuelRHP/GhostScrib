@@ -150,6 +150,9 @@ class AssessmentStats(BaseModel):
     words_assessed: int
     skipped_share: float
     insufficient_text: bool
+    body_prose_words_total: int = 0
+    body_prose_words_assessed: int = 0
+    body_prose_skipped_share: float = 0.0
 
 
 class Report(BaseModel):

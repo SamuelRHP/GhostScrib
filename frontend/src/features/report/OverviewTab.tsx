@@ -20,10 +20,15 @@ export default function OverviewTab({ report }: OverviewTabProps): React.ReactEl
   const isShortText = isInsufficientText || wordCount < 500;
   const isLouder = isNonCs || isShortText;
 
-  // Paragraph stats & Skipped share
+  // Paragraph stats & Body-prose coverage metric (Req 2)
   const paragraphsAssessed = assessment?.paragraphs_assessed ?? 0;
   const paragraphsTotal = assessment?.paragraphs_total ?? 0;
-  const skippedShare = assessment?.skipped_share ?? 0;
+  const bodyWordsAssessed = assessment?.body_prose_words_assessed ?? assessment?.words_assessed ?? 0;
+  const bodyWordsTotal = assessment?.body_prose_words_total ?? assessment?.words_total ?? 0;
+  const bodyCoveragePct = bodyWordsTotal > 0 ? Math.round((bodyWordsAssessed / bodyWordsTotal) * 100) : 0;
+
+  // The 40% warning must use the body-prose skipped share metric
+  const skippedShare = assessment?.body_prose_skipped_share ?? assessment?.skipped_share ?? 0;
   const isHighSkipped = skippedShare > 0.40;
   const skippedPercentage = Math.round(skippedShare * 100);
 
@@ -242,9 +247,12 @@ export default function OverviewTab({ report }: OverviewTabProps): React.ReactEl
         >
           <div style={{ fontSize: "var(--font-size-sm)", color: "var(--color-text-primary)" }}>
             Assessment Scope:{" "}
-            <strong data-testid="paragraphs-assessed-stat">
-              {paragraphsAssessed} of {paragraphsTotal} paragraphs assessed
+            <strong data-testid="body-prose-coverage-stat">
+              {bodyCoveragePct}% of body-prose words assessed ({bodyWordsAssessed.toLocaleString()} of {bodyWordsTotal.toLocaleString()} words)
             </strong>
+            <span style={{ color: "var(--color-text-muted)", marginLeft: "var(--spacing-2)" }}>
+              (<span data-testid="paragraphs-assessed-stat">{paragraphsAssessed} of {paragraphsTotal} paragraphs assessed</span>)
+            </span>
           </div>
           <div style={{ fontSize: "var(--font-size-xs)", color: "var(--color-text-muted)" }}>
             Assessed words: {assessment?.words_assessed ?? 0} of {assessment?.words_total ?? 0}

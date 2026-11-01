@@ -65,10 +65,40 @@ def aggregate_report(
         assessed_words, ai_words, uncertain_words
     )
 
-    # 4. Count total vs unassessed paragraphs
+    # 4. Count total vs unassessed paragraphs and compute body-prose coverage (Req 2)
+    # Exclude headings, title and author block, front-matter metadata, the reference list, equations, code, and tables
     all_paras = [p for s in document.sections for p in s.paragraphs]
     total_paras = len(all_paras)
     unassessed_paras = sum(1 for p in all_paras if p.label == "not_assessed")
+
+    body_prose_words_total = 0
+    body_prose_words_assessed = 0
+
+    for s in document.sections:
+        is_fm_sec = s.name == "Front matter"
+        is_ref_sec = s.name.lower() in ("references", "bibliography")
+
+        for p in s.paragraphs:
+            r = (p.reason or "").lower()
+            is_fm = is_fm_sec or ("front matter" in r)
+            is_ref = is_ref_sec or ("reference" in r)
+            is_non_prose = any(
+                k in r for k in [
+                    "heading", "code", "assembly", "table", "tabular",
+                    "equation", "formula", "trace", "metadata", "declaration"
+                ]
+            )
+
+            if not (is_fm or is_ref or is_non_prose):
+                body_prose_words_total += p.words
+                if p.label != "not_assessed":
+                    body_prose_words_assessed += p.words
+
+    body_prose_skipped_share = (
+        round(1.0 - (body_prose_words_assessed / body_prose_words_total), 4)
+        if body_prose_words_total > 0
+        else 0.0
+    )
 
     # 5. Provenance Confidence
     confidence_level, confidence_reasons = calculate_provenance_confidence(
@@ -79,6 +109,7 @@ def aggregate_report(
         assessed_words=assessed_words,
         total_paragraphs=total_paras,
         unassessed_paragraphs=unassessed_paras,
+        body_prose_skipped_share=body_prose_skipped_share,
     )
 
     # 6. Disclosure Consistency
@@ -132,7 +163,6 @@ def aggregate_report(
         default_limitations.extend(limitations)
 
     assessed_paras = total_paras - unassessed_paras
-    skipped_share = round(unassessed_paras / total_paras, 4) if total_paras > 0 else 0.0
     insufficient_text = assessed_paras < 3
 
     assessment = AssessmentStats(
@@ -141,8 +171,11 @@ def aggregate_report(
         paragraphs_skipped=unassessed_paras,
         words_total=document.n_words,
         words_assessed=assessed_words,
-        skipped_share=skipped_share,
+        skipped_share=body_prose_skipped_share,
         insufficient_text=insufficient_text,
+        body_prose_words_total=body_prose_words_total,
+        body_prose_words_assessed=body_prose_words_assessed,
+        body_prose_skipped_share=body_prose_skipped_share,
     )
 
     return Report(

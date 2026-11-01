@@ -203,6 +203,8 @@ export default function ReportPage({ initialReport }: { initialReport?: Report }
           return (
             <button
               key={tab.key}
+              role="tab"
+              aria-selected={isActive}
               onClick={() => setActiveTab(tab.key)}
               style={{
                 padding: "var(--spacing-2) var(--spacing-4)",

@@ -142,8 +142,8 @@ const ParagraphCard = memo(function ParagraphCard({
         <div className={styles.paragraphMeta}>
           <span>{paragraph.words} words</span>
           {paragraph.label === "not_assessed" && (
-            <span className={styles.skippedReason}>
-              (Excluded: under 40 words or non-prose structure)
+            <span className={styles.skippedReason} data-testid="paragraph-skip-reason">
+              (Excluded: {paragraph.reason || "under 40 words or non-prose structure"})
             </span>
           )}
         </div>

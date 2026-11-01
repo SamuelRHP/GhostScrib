@@ -109,5 +109,53 @@ describe("DocumentViewTab Component", () => {
     // Fast render expectation (< 1000ms)
     expect(duration).toBeLessThan(1000);
   });
+
+  it("displays exact skip reason on not_assessed paragraphs (Req 6)", () => {
+    const reportWithReasons: typeof demoReport = {
+      ...demoReport,
+      document: {
+        ...demoReport.document,
+        sections: [
+          {
+            id: "sec_test",
+            name: "Methods",
+            band: "low",
+            stats: {
+              assessed_words: 0,
+              n_ai: 0,
+              n_uncertain: 0,
+              share_ai: 0.0,
+              share_uncertain: 0.0,
+            },
+            paragraphs: [
+              {
+                text: "Motivation",
+                words: 1,
+                section: "Methods",
+                label: "not_assessed",
+                score: null,
+                sentences: [],
+                reason: "section / subsection heading",
+              },
+              {
+                text: "(3)",
+                words: 1,
+                section: "Methods",
+                label: "not_assessed",
+                score: null,
+                sentences: [],
+                reason: "equation fragment",
+              },
+            ],
+            notes: null,
+          },
+        ],
+      },
+    };
+
+    render(<DocumentViewTab report={reportWithReasons} />);
+    expect(screen.getByText("(Excluded: section / subsection heading)")).toBeDefined();
+    expect(screen.getByText("(Excluded: equation fragment)")).toBeDefined();
+  });
 });
 
