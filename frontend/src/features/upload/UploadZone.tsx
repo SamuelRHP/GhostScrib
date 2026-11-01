@@ -104,8 +104,10 @@ export default function UploadZone({
   const handleDragLeave = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
     e.stopPropagation();
-    // Only set dragging false if leaving the container itself
-    if (e.currentTarget.contains(e.relatedTarget as Node)) return;
+    // Only unset dragging if left the container itself
+    if (e.currentTarget.contains(e.relatedTarget as Node)) {
+      return;
+    }
     setIsDragging(false);
   };
 
@@ -113,35 +115,37 @@ export default function UploadZone({
     e.preventDefault();
     e.stopPropagation();
     setIsDragging(false);
+
     if (disabled) return;
 
-    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
-      handleFile(e.dataTransfer.files[0]);
+    const files = e.dataTransfer.files;
+    if (files && files.length > 0) {
+      handleFile(files[0]);
     }
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files.length > 0) {
-      handleFile(e.target.files[0]);
+    const files = e.target.files;
+    if (files && files.length > 0) {
+      handleFile(files[0]);
     }
   };
 
   return (
-    <div>
-      {/* Hidden Native File Input */}
+    <div style={{ width: "100%" }}>
+      {/* Real HTML file input: Visually hidden but accessible via click/keyboard forwarding */}
       <input
-        ref={fileInputRef}
-        id="manuscript-file-input"
-        data-testid="file-input"
         type="file"
-        accept={accept}
+        ref={fileInputRef}
+        data-testid="file-input"
         onChange={handleInputChange}
-        disabled={disabled}
-        style={{ display: "none" }}
+        accept={accept}
         tabIndex={-1}
+        aria-hidden="true"
+        style={{ display: "none" }}
       />
 
-      {/* Accessible Interactive Drop Zone */}
+      {/* Drop Zone Box */}
       <div
         role="button"
         data-testid="upload-dropzone"
@@ -156,29 +160,30 @@ export default function UploadZone({
         onDrop={handleDrop}
         style={{
           border: isDragging
-            ? "2px dashed var(--color-primary, #2563eb)"
-            : "2px dashed var(--color-border-subtle, #cbd5e1)",
-          borderRadius: "var(--radius-lg, 12px)",
-          padding: "var(--spacing-8, 32px)",
+            ? "2px dashed var(--color-primary)"
+            : "2px dashed var(--color-border)",
+          borderRadius: "var(--radius-card)",
+          padding: "var(--spacing-8)",
           backgroundColor: isDragging
-            ? "rgba(37, 99, 235, 0.05)"
+            ? "var(--color-mint-pale)"
             : disabled
-            ? "var(--color-bg-subtle, #f8f9fa)"
-            : "var(--color-bg-card, #ffffff)",
+            ? "var(--color-surface)"
+            : "var(--color-bg-card)",
           cursor: disabled ? "not-allowed" : "pointer",
           opacity: disabled ? 0.65 : 1,
           textAlign: "center",
           transition: "all 0.15s ease-in-out",
+          boxShadow: "var(--shadow-card)",
           outline: "none",
         }}
       >
-        <div style={{ marginBottom: "var(--spacing-4, 16px)" }}>
+        <div style={{ marginBottom: "var(--spacing-4)" }}>
           <svg
             width="48"
             height="48"
             viewBox="0 0 24 24"
             fill="none"
-            stroke={isDragging ? "var(--color-primary, #2563eb)" : "var(--color-text-secondary, #64748b)"}
+            stroke={isDragging ? "var(--color-primary)" : "var(--color-primary)"}
             strokeWidth="2"
             strokeLinecap="round"
             strokeLinejoin="round"
@@ -193,10 +198,10 @@ export default function UploadZone({
 
         <h3
           style={{
-            margin: "0 0 var(--spacing-2, 8px) 0",
-            fontSize: "var(--font-size-lg, 18px)",
-            fontWeight: "var(--font-weight-semibold, 600)",
-            color: "var(--color-text-primary, #1e293b)",
+            margin: "0 0 var(--spacing-2) 0",
+            fontSize: "var(--font-size-lg)",
+            fontWeight: "var(--font-weight-semibold)",
+            color: "var(--color-text)",
           }}
         >
           {isDragging ? "Drop your manuscript here" : "Click to select or drag & drop a manuscript"}
@@ -204,9 +209,9 @@ export default function UploadZone({
 
         <p
           style={{
-            margin: "0 0 var(--spacing-4, 16px) 0",
-            fontSize: "var(--font-size-sm, 14px)",
-            color: "var(--color-text-secondary, #64748b)",
+            margin: "0 0 var(--spacing-4) 0",
+            fontSize: "var(--font-size-sm)",
+            color: "var(--color-text-muted)",
           }}
         >
           Supports PDF (.pdf), Word (.docx), or plain text (.txt) &middot; Up to 20 MB
@@ -216,12 +221,13 @@ export default function UploadZone({
           <div
             style={{
               display: "inline-block",
-              padding: "4px 12px",
-              backgroundColor: "rgba(239, 68, 68, 0.1)",
-              color: "#dc2626",
-              borderRadius: "var(--radius-sm, 6px)",
-              fontSize: "var(--font-size-xs, 12px)",
-              fontWeight: 500,
+              padding: "var(--spacing-1) var(--spacing-3)",
+              backgroundColor: "var(--color-amber-bg)",
+              color: "var(--color-amber-text)",
+              border: "1px solid var(--color-amber-border)",
+              borderRadius: "var(--radius-chip)",
+              fontSize: "var(--font-size-xs)",
+              fontWeight: "var(--font-weight-medium)",
             }}
           >
             {disabledReason}
@@ -233,12 +239,12 @@ export default function UploadZone({
             <span
               style={{
                 display: "inline-block",
-                padding: "8px 16px",
-                backgroundColor: "var(--color-primary, #2563eb)",
-                color: "#ffffff",
-                borderRadius: "var(--radius-md, 8px)",
-                fontSize: "var(--font-size-sm, 14px)",
-                fontWeight: 500,
+                padding: "var(--spacing-2) var(--spacing-4)",
+                backgroundColor: "var(--color-primary)",
+                color: "var(--color-text-on-dark)",
+                borderRadius: "var(--radius-control)",
+                fontSize: "var(--font-size-sm)",
+                fontWeight: "var(--font-weight-medium)",
                 pointerEvents: "none",
               }}
             >
@@ -254,13 +260,13 @@ export default function UploadZone({
           role="alert"
           data-testid="upload-error"
           style={{
-            marginTop: "var(--spacing-3, 12px)",
-            padding: "var(--spacing-3, 12px) var(--spacing-4, 16px)",
-            backgroundColor: "rgba(220, 38, 38, 0.08)",
-            border: "1px solid rgba(220, 38, 38, 0.3)",
-            borderRadius: "var(--radius-md, 8px)",
-            color: "#b91c1c",
-            fontSize: "var(--font-size-sm, 14px)",
+            marginTop: "var(--spacing-3)",
+            padding: "var(--spacing-3) var(--spacing-4)",
+            backgroundColor: "var(--color-amber-bg)",
+            border: "1px solid var(--color-amber-border)",
+            borderRadius: "var(--radius-control)",
+            color: "var(--color-amber-text)",
+            fontSize: "var(--font-size-sm)",
             display: "flex",
             alignItems: "center",
             justifyContent: "space-between",
@@ -273,11 +279,11 @@ export default function UploadZone({
             style={{
               background: "none",
               border: "none",
-              color: "#b91c1c",
+              color: "var(--color-amber-text)",
               cursor: "pointer",
-              fontWeight: "bold",
-              fontSize: "16px",
-              padding: "0 4px",
+              fontWeight: "var(--font-weight-bold)",
+              fontSize: "var(--font-size-base)",
+              padding: "0 var(--spacing-1)",
             }}
             aria-label="Dismiss error"
           >
@@ -288,4 +294,3 @@ export default function UploadZone({
     </div>
   );
 }
-
