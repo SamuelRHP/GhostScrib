@@ -1,14 +1,14 @@
 import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import type { JobResponse, JobStageName } from "@/types/api";
+import type { JobResponse, JobStage, JobStageName } from "@/types/api";
 
 const STAGE_LABELS: Record<JobStageName, string> = {
-  parsing: "Document Parsing & Hygiene",
-  detection: "Primary Lukkinen Ensemble Detection",
-  stylometry: "Sentence Structure & Stylometry Profiling",
-  attribution: "Token Transition Attribution Analysis",
-  citations: "Crossref & OpenAlex Citation Verification",
-  scoring: "Provenance Aggregation & Transparency Report",
+  parsing: "Document Extraction & Structure Analysis",
+  detection: "Multi-Model AI Probability Detection",
+  stylometry: "Statistical Stylometry & Burstiness",
+  attribution: "Fingerprint Model Attribution (Experimental)",
+  citations: "Crossref Reference Verification & DOI Resolution",
+  scoring: "Composite Provenance Synthesis",
 };
 
 export default function AnalyzingPage(): React.ReactElement {
@@ -19,78 +19,87 @@ export default function AnalyzingPage(): React.ReactElement {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!jobId) return;
+    if (!jobId) {
+      setError("No job ID provided.");
+      return;
+    }
 
     let isMounted = true;
-    let timerId: ReturnType<typeof setTimeout>;
+    let timerId: NodeJS.Timeout | null = null;
 
-    const pollJob = async () => {
+    const pollStatus = async () => {
       try {
         const res = await fetch(`/api/jobs/${jobId}`);
         if (!res.ok) {
-          if (res.status === 404) {
-            throw new Error(`Analysis job '${jobId}' was not found.`);
-          }
           throw new Error(`Failed to fetch job status (HTTP ${res.status})`);
         }
-
         const data: JobResponse = await res.json();
         if (!isMounted) return;
 
         setJob(data);
 
-        if (data.status === "done") {
-          // Navigate to completed report
+        if (data.status === "done" || (data.status as string) === "completed") {
           navigate(`/report/${jobId}`);
-        } else if (data.status === "error") {
-          setError(data.error?.message || "An unexpected error occurred during analysis.");
+        } else if (data.status === "error" || (data.status as string) === "failed") {
+          setError(data.error?.message || "Analysis failed.");
         } else {
-          // Continue polling
-          timerId = setTimeout(pollJob, 1000);
+          // Poll every 1 second while pending/processing
+          timerId = setTimeout(pollStatus, 1000);
         }
       } catch (err: unknown) {
         if (!isMounted) return;
-        const msg = err instanceof Error ? err.message : "Error connecting to server.";
+        const msg = err instanceof Error ? err.message : "Error polling job status.";
         setError(msg);
       }
     };
 
-    pollJob();
+    pollStatus();
 
     return () => {
       isMounted = false;
-      clearTimeout(timerId);
+      if (timerId) clearTimeout(timerId);
     };
   }, [jobId, navigate]);
 
-  const stages = job?.stages || [
-    { name: "parsing" as JobStageName, status: "running" },
-    { name: "detection" as JobStageName, status: "pending" },
-    { name: "stylometry" as JobStageName, status: "pending" },
-    { name: "attribution" as JobStageName, status: "pending" },
-    { name: "citations" as JobStageName, status: "pending" },
-    { name: "scoring" as JobStageName, status: "pending" },
+  const stages: JobStage[] = job?.stages || [
+    { name: "parsing", status: "pending" },
+    { name: "detection", status: "pending" },
+    { name: "stylometry", status: "pending" },
+    { name: "attribution", status: "pending" },
+    { name: "citations", status: "pending" },
+    { name: "scoring", status: "pending" },
   ];
 
   const progressPct = job ? Math.round(job.progress * 100) : 10;
 
   return (
-    <div style={{ padding: "var(--spacing-8, 32px)", maxWidth: "700px", margin: "0 auto" }}>
+    <div style={{ padding: "var(--spacing-8) var(--spacing-4)", maxWidth: "720px", margin: "0 auto" }}>
       <div
         style={{
-          border: "1px solid var(--color-border, #e2e8f0)",
-          padding: "var(--spacing-8, 32px)",
-          borderRadius: "var(--radius-lg, 12px)",
-          backgroundColor: "var(--color-bg-card, #ffffff)",
-          boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.05)",
+          border: "1px solid var(--color-border)",
+          padding: "var(--spacing-8)",
+          borderRadius: "var(--radius-card)",
+          backgroundColor: "var(--color-bg-card)",
+          boxShadow: "var(--shadow-card)",
         }}
       >
-        <div style={{ textAlign: "center", marginBottom: "var(--spacing-6, 24px)" }}>
-          <h2 style={{ margin: "0 0 var(--spacing-2, 8px) 0", fontSize: "var(--font-size-xl, 20px)" }}>
+        <div style={{ textAlign: "center", marginBottom: "var(--spacing-6)" }}>
+          <h2 style={{ margin: "0 0 var(--spacing-2) 0", fontSize: "var(--font-size-2xl)", color: "var(--color-text)" }}>
             Analyzing Manuscript...
           </h2>
-          <p style={{ color: "var(--color-text-secondary, #64748b)", margin: "0 0 var(--spacing-3, 12px) 0", fontSize: "14px" }}>
-            Job ID: <code style={{ backgroundColor: "#f1f5f9", padding: "2px 6px", borderRadius: "4px" }}>{jobId ?? "unknown"}</code>
+          <p style={{ color: "var(--color-text-muted)", margin: "0 0 var(--spacing-4) 0", fontSize: "var(--font-size-sm)" }}>
+            Job ID:{" "}
+            <code
+              style={{
+                backgroundColor: "var(--color-surface)",
+                padding: "var(--spacing-1) var(--spacing-2)",
+                borderRadius: "var(--radius-chip)",
+                color: "var(--color-text)",
+                fontFamily: "var(--font-family-mono)",
+              }}
+            >
+              {jobId ?? "unknown"}
+            </code>
           </p>
 
           {/* Progress Bar */}
@@ -98,22 +107,23 @@ export default function AnalyzingPage(): React.ReactElement {
             style={{
               width: "100%",
               height: "10px",
-              backgroundColor: "#e2e8f0",
-              borderRadius: "5px",
+              backgroundColor: "var(--color-surface)",
+              borderRadius: "var(--radius-pill)",
               overflow: "hidden",
-              margin: "16px 0 8px 0",
+              margin: "var(--spacing-4) 0 var(--spacing-2) 0",
             }}
           >
             <div
               style={{
                 width: `${progressPct}%`,
                 height: "100%",
-                backgroundColor: "var(--color-primary, #2563eb)",
+                backgroundColor: "var(--color-primary)",
+                borderRadius: "var(--radius-pill)",
                 transition: "width 0.3s ease-in-out",
               }}
             />
           </div>
-          <div style={{ fontSize: "13px", color: "var(--color-text-secondary, #64748b)" }}>
+          <div style={{ fontSize: "var(--font-size-xs)", color: "var(--color-text-muted)" }}>
             {progressPct}% complete
           </div>
         </div>
@@ -123,27 +133,27 @@ export default function AnalyzingPage(): React.ReactElement {
           <div
             role="alert"
             style={{
-              padding: "12px 16px",
-              backgroundColor: "rgba(220, 38, 38, 0.08)",
-              border: "1px solid rgba(220, 38, 38, 0.3)",
-              borderRadius: "8px",
-              color: "#b91c1c",
-              marginBottom: "20px",
-              fontSize: "14px",
+              padding: "var(--spacing-3) var(--spacing-4)",
+              backgroundColor: "var(--color-amber-bg)",
+              border: "1px solid var(--color-amber-border)",
+              borderRadius: "var(--radius-control)",
+              color: "var(--color-amber-text)",
+              marginBottom: "var(--spacing-5)",
+              fontSize: "var(--font-size-sm)",
             }}
           >
             <strong>Analysis Failed:</strong> {error}
-            <div style={{ marginTop: "10px" }}>
+            <div style={{ marginTop: "var(--spacing-2)" }}>
               <button
                 type="button"
                 onClick={() => navigate("/")}
                 style={{
-                  padding: "6px 14px",
-                  fontSize: "13px",
-                  backgroundColor: "#b91c1c",
-                  color: "#ffffff",
+                  padding: "var(--spacing-1) var(--spacing-3)",
+                  fontSize: "var(--font-size-xs)",
+                  backgroundColor: "var(--color-primary)",
+                  color: "var(--color-text-on-dark)",
                   border: "none",
-                  borderRadius: "6px",
+                  borderRadius: "var(--radius-control)",
                   cursor: "pointer",
                 }}
               >
@@ -154,70 +164,95 @@ export default function AnalyzingPage(): React.ReactElement {
         )}
 
         {/* 6-Stage Progress Stepper */}
-        <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-          {stages.map((st, idx) => {
+        <div style={{ display: "flex", flexDirection: "column", gap: "var(--spacing-3)" }}>
+          {stages.map((st: JobStage, idx: number) => {
             const isDone = st.status === "done";
             const isRunning = st.status === "running";
             const isSkipped = st.status === "skipped";
             const isError = st.status === "error";
 
-            let iconColor = "#94a3b8";
+            let iconBg = "var(--color-surface)";
+            let iconColor = "var(--color-text-muted)";
+            let iconBorder = "var(--color-border)";
             let iconText = `${idx + 1}`;
-            let textColor = "#64748b";
+            let textColor = "var(--color-text-muted)";
 
             if (isDone) {
-              iconColor = "#10b981";
+              iconBg = "var(--color-mint-pale)";
+              iconColor = "var(--color-primary)";
+              iconBorder = "var(--color-mint)";
               iconText = "✓";
-              textColor = "#1e293b";
+              textColor = "var(--color-text)";
             } else if (isRunning) {
-              iconColor = "#2563eb";
+              iconBg = "var(--color-mint-pale)";
+              iconColor = "var(--color-primary)";
+              iconBorder = "var(--color-primary)";
               iconText = "●";
-              textColor = "#1e293b";
+              textColor = "var(--color-primary)";
             } else if (isSkipped) {
-              iconColor = "#94a3b8";
               iconText = "–";
-              textColor = "#94a3b8";
+              textColor = "var(--color-text-muted)";
             } else if (isError) {
-              iconColor = "#dc2626";
+              iconBg = "var(--color-amber-bg)";
+              iconColor = "var(--color-amber-text)";
+              iconBorder = "var(--color-amber-border)";
               iconText = "✕";
-              textColor = "#dc2626";
+              textColor = "var(--color-amber-text)";
             }
 
             return (
               <div
                 key={st.name}
+                data-testid={`stage-${st.name}`}
                 style={{
                   display: "flex",
                   alignItems: "center",
-                  gap: "12px",
-                  padding: "8px 12px",
-                  borderRadius: "6px",
-                  backgroundColor: isRunning ? "rgba(37, 99, 235, 0.05)" : "transparent",
+                  justifyContent: "space-between",
+                  padding: "var(--spacing-2) var(--spacing-3)",
+                  borderRadius: "var(--radius-control)",
+                  backgroundColor: isRunning ? "var(--color-mint-pale)" : "transparent",
+                  border: isRunning ? "1px solid var(--color-mint)" : "1px solid transparent",
                 }}
               >
-                <div
+                <div style={{ display: "flex", alignItems: "center", gap: "var(--spacing-3)" }}>
+                  <div
+                    style={{
+                      width: "24px",
+                      height: "24px",
+                      borderRadius: "50%",
+                      backgroundColor: iconBg,
+                      border: `1px solid ${iconBorder}`,
+                      color: iconColor,
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      fontSize: "var(--font-size-xs)",
+                      fontWeight: "var(--font-weight-bold)",
+                    }}
+                  >
+                    {iconText}
+                  </div>
+                  <span
+                    style={{
+                      fontSize: "var(--font-size-sm)",
+                      fontWeight: isRunning ? "var(--font-weight-semibold)" : "var(--font-weight-normal)",
+                      color: textColor,
+                    }}
+                  >
+                    {STAGE_LABELS[st.name] || st.name}
+                  </span>
+                </div>
+
+                <span
                   style={{
-                    width: "28px",
-                    height: "28px",
-                    borderRadius: "50%",
-                    backgroundColor: iconColor,
-                    color: "#ffffff",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    fontWeight: "bold",
-                    fontSize: "13px",
-                    flexShrink: 0,
+                    fontSize: "var(--font-size-xs)",
+                    color: isRunning ? "var(--color-primary)" : "var(--color-text-muted)",
+                    fontWeight: isRunning ? "var(--font-weight-semibold)" : "var(--font-weight-normal)",
+                    textTransform: "capitalize",
                   }}
                 >
-                  {iconText}
-                </div>
-                <div style={{ flex: 1, fontSize: "14px", fontWeight: isRunning ? 600 : 400, color: textColor }}>
-                  {STAGE_LABELS[st.name as JobStageName] || st.name}
-                </div>
-                <div style={{ fontSize: "12px", textTransform: "capitalize", color: iconColor, fontWeight: 500 }}>
-                  {st.status}
-                </div>
+                  {isRunning ? "In Progress..." : st.status}
+                </span>
               </div>
             );
           })}

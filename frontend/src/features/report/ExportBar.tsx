@@ -22,18 +22,22 @@ export default function ExportBar({
         padding: "var(--spacing-3) var(--spacing-4)",
         backgroundColor: "var(--color-bg-card)",
         border: "1px solid var(--color-border)",
-        borderRadius: "var(--radius-md)",
+        borderRadius: "var(--radius-control)",
         marginBottom: "var(--spacing-4)",
+        boxShadow: "var(--shadow-sm)",
       }}
     >
       <div style={{ display: "flex", alignItems: "center", gap: "var(--spacing-3)" }}>
-        <span style={{ fontSize: "var(--font-size-sm)", color: "var(--color-text-secondary)" }}>
+        <span style={{ fontSize: "var(--font-size-sm)", color: "var(--color-text-muted)" }}>
           Job ID:{" "}
           <code
             style={{
-              color: "var(--color-text-primary)",
+              backgroundColor: "var(--color-surface)",
+              color: "var(--color-text)",
               fontWeight: "var(--font-weight-semibold)",
               fontFamily: "var(--font-family-mono)",
+              padding: "2px var(--spacing-2)",
+              borderRadius: "var(--radius-chip)",
             }}
           >
             {effectiveJobId}
@@ -42,11 +46,13 @@ export default function ExportBar({
         {isDemo && (
           <span
             style={{
-              padding: "2px 8px",
+              padding: "2px var(--spacing-2)",
               fontSize: "var(--font-size-xs)",
-              borderRadius: "var(--radius-full)",
-              backgroundColor: "var(--color-band-neutral-bg)",
-              color: "var(--color-band-neutral-text)",
+              borderRadius: "var(--radius-pill)",
+              backgroundColor: "var(--color-mint-pale)",
+              color: "var(--color-primary)",
+              border: "1px solid var(--color-mint)",
+              fontWeight: "var(--font-weight-semibold)",
             }}
           >
             Demo Data
@@ -58,7 +64,7 @@ export default function ExportBar({
         <span
           style={{
             fontSize: "var(--font-size-xs)",
-            color: "var(--color-text-tertiary)",
+            color: "var(--color-text-muted)",
             marginRight: "var(--spacing-1)",
           }}
         >
@@ -76,7 +82,7 @@ export default function ExportBar({
             color: "var(--color-primary)",
             backgroundColor: "transparent",
             border: "1px solid var(--color-primary)",
-            borderRadius: "var(--radius-md)",
+            borderRadius: "var(--radius-control)",
             textDecoration: "none",
             cursor: "pointer",
           }}
@@ -98,7 +104,7 @@ export default function ExportBar({
             color: "var(--color-primary)",
             backgroundColor: "transparent",
             border: "1px solid var(--color-primary)",
-            borderRadius: "var(--radius-md)",
+            borderRadius: "var(--radius-control)",
             textDecoration: "none",
             cursor: "pointer",
           }}
@@ -115,10 +121,10 @@ export default function ExportBar({
             padding: "var(--spacing-1) var(--spacing-3)",
             fontSize: "var(--font-size-xs)",
             fontWeight: "var(--font-weight-medium)",
-            color: "#ffffff",
+            color: "var(--color-text-on-dark)",
             backgroundColor: "var(--color-primary)",
             border: "1px solid var(--color-primary)",
-            borderRadius: "var(--radius-md)",
+            borderRadius: "var(--radius-control)",
             textDecoration: "none",
             cursor: "pointer",
           }}

@@ -284,7 +284,8 @@ export default function OverviewTab({ report }: OverviewTabProps): React.ReactEl
           style={{
             backgroundColor: "var(--color-bg-card)",
             border: "1px solid var(--color-border)",
-            borderRadius: "var(--radius-lg)",
+            borderRadius: "var(--radius-card)",
+            boxShadow: "var(--shadow-card)",
             padding: "var(--spacing-4)",
             display: "flex",
             flexDirection: "column",
@@ -401,7 +402,8 @@ export default function OverviewTab({ report }: OverviewTabProps): React.ReactEl
           style={{
             backgroundColor: "var(--color-bg-card)",
             border: "1px solid var(--color-border)",
-            borderRadius: "var(--radius-lg)",
+            borderRadius: "var(--radius-card)",
+            boxShadow: "var(--shadow-card)",
             padding: "var(--spacing-4)",
             display: "flex",
             flexDirection: "column",
@@ -518,7 +520,8 @@ export default function OverviewTab({ report }: OverviewTabProps): React.ReactEl
           style={{
             backgroundColor: "var(--color-bg-card)",
             border: "1px solid var(--color-border)",
-            borderRadius: "var(--radius-lg)",
+            borderRadius: "var(--radius-card)",
+            boxShadow: "var(--shadow-card)",
             padding: "var(--spacing-4)",
             display: "flex",
             flexDirection: "column",
@@ -597,7 +600,8 @@ export default function OverviewTab({ report }: OverviewTabProps): React.ReactEl
           style={{
             backgroundColor: "var(--color-bg-card)",
             border: "1px solid var(--color-border)",
-            borderRadius: "var(--radius-lg)",
+            borderRadius: "var(--radius-card)",
+            boxShadow: "var(--shadow-card)",
             padding: "var(--spacing-4)",
             display: "flex",
             flexDirection: "column",
@@ -672,7 +676,8 @@ export default function OverviewTab({ report }: OverviewTabProps): React.ReactEl
           style={{
             backgroundColor: "var(--color-bg-card)",
             border: "1px solid var(--color-border)",
-            borderRadius: "var(--radius-lg)",
+            borderRadius: "var(--radius-card)",
+            boxShadow: "var(--shadow-card)",
             padding: "var(--spacing-4)",
             display: "flex",
             flexDirection: "column",
@@ -746,7 +751,8 @@ export default function OverviewTab({ report }: OverviewTabProps): React.ReactEl
           style={{
             backgroundColor: "var(--color-bg-card)",
             border: "1px solid var(--color-border)",
-            borderRadius: "var(--radius-lg)",
+            borderRadius: "var(--radius-card)",
+            boxShadow: "var(--shadow-card)",
             padding: "var(--spacing-4)",
             display: "flex",
             flexDirection: "column",

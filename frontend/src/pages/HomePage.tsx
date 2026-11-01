@@ -90,16 +90,18 @@ export default function HomePage(): React.ReactElement {
     return `${(bytes / (1024 * 1024)).toFixed(2)} MB`;
   };
 
+  const isHealthy = health?.detector === "healthy";
+
   return (
-    <div style={{ padding: "var(--spacing-8, 32px)", maxWidth: "800px", margin: "0 auto" }}>
+    <div style={{ padding: "var(--spacing-8) var(--spacing-4)", maxWidth: "840px", margin: "0 auto" }}>
       {/* Title & Description */}
-      <div style={{ textAlign: "center", marginBottom: "var(--spacing-6, 24px)" }}>
+      <div style={{ textAlign: "center", marginBottom: "var(--spacing-8)" }}>
         <h1
           style={{
-            margin: "0 0 var(--spacing-2, 8px) 0",
-            fontSize: "var(--font-size-2xl, 28px)",
-            fontWeight: "var(--font-weight-bold, 700)",
-            color: "var(--color-text-primary, #1e293b)",
+            margin: "0 0 var(--spacing-2) 0",
+            fontSize: "var(--font-size-3xl)",
+            fontWeight: "var(--font-weight-bold)",
+            color: "var(--color-text)",
             letterSpacing: "-0.5px",
           }}
         >
@@ -107,9 +109,9 @@ export default function HomePage(): React.ReactElement {
         </h1>
         <p
           style={{
-            margin: "0 0 var(--spacing-4, 16px) 0",
-            color: "var(--color-text-secondary, #64748b)",
-            fontSize: "var(--font-size-md, 16px)",
+            margin: "0 0 var(--spacing-4) 0",
+            color: "var(--color-text-muted)",
+            fontSize: "var(--font-size-base)",
           }}
         >
           Decision support for editors and reviewers. Never an automated misconduct verdict.
@@ -117,18 +119,31 @@ export default function HomePage(): React.ReactElement {
 
         {/* Detector Health Status Badge */}
         {!isHealthLoading && (
-          <div style={{ display: "inline-flex", alignItems: "center", gap: "8px", fontSize: "13px" }}>
+          <div
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: "var(--spacing-2)",
+              padding: "var(--spacing-1) var(--spacing-3)",
+              borderRadius: "var(--radius-pill)",
+              backgroundColor: isHealthy ? "var(--color-mint-pale)" : "var(--color-amber-bg)",
+              color: isHealthy ? "var(--color-primary)" : "var(--color-amber-text)",
+              border: `1px solid ${isHealthy ? "var(--color-mint)" : "var(--color-amber-border)"}`,
+              fontSize: "var(--font-size-xs)",
+              fontWeight: "var(--font-weight-medium)",
+            }}
+          >
             <span
               style={{
                 display: "inline-block",
                 width: "8px",
                 height: "8px",
                 borderRadius: "50%",
-                backgroundColor: health?.detector === "healthy" ? "#10b981" : "#f59e0b",
+                backgroundColor: isHealthy ? "var(--color-primary)" : "var(--color-amber-text)",
               }}
             />
-            <span style={{ color: "var(--color-text-secondary, #64748b)" }}>
-              {health?.detector === "healthy"
+            <span>
+              {isHealthy
                 ? "Primary detector service online"
                 : "Primary detector offline (heuristic mode)"}
             </span>
@@ -149,38 +164,39 @@ export default function HomePage(): React.ReactElement {
           <div
             data-testid="selected-file-card"
             style={{
-              marginTop: "var(--spacing-4, 16px)",
-              padding: "var(--spacing-4, 16px)",
-              backgroundColor: "var(--color-bg-card, #ffffff)",
-              border: "1px solid var(--color-border, #e2e8f0)",
-              borderRadius: "var(--radius-md, 8px)",
+              marginTop: "var(--spacing-4)",
+              padding: "var(--spacing-4)",
+              backgroundColor: "var(--color-bg-card)",
+              border: "1px solid var(--color-border)",
+              borderRadius: "var(--radius-card)",
+              boxShadow: "var(--shadow-card)",
               display: "flex",
               alignItems: "center",
               justifyContent: "space-between",
             }}
           >
-            <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "var(--spacing-3)" }}>
               <div
                 style={{
                   width: "40px",
                   height: "40px",
-                  borderRadius: "6px",
-                  backgroundColor: "rgba(37, 99, 235, 0.1)",
-                  color: "var(--color-primary, #2563eb)",
+                  borderRadius: "var(--radius-control)",
+                  backgroundColor: "var(--color-mint-pale)",
+                  color: "var(--color-primary)",
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
-                  fontWeight: "bold",
-                  fontSize: "12px",
+                  fontWeight: "var(--font-weight-bold)",
+                  fontSize: "var(--font-size-xs)",
                 }}
               >
                 {selectedFile.name.split(".").pop()?.toUpperCase() || "DOC"}
               </div>
               <div>
-                <div style={{ fontWeight: 600, fontSize: "14px", color: "var(--color-text-primary, #1e293b)" }}>
+                <div style={{ fontWeight: "var(--font-weight-semibold)", fontSize: "var(--font-size-sm)", color: "var(--color-text)" }}>
                   {selectedFile.name}
                 </div>
-                <div style={{ fontSize: "12px", color: "var(--color-text-secondary, #64748b)" }}>
+                <div style={{ fontSize: "var(--font-size-xs)", color: "var(--color-text-muted)" }}>
                   {formatFileSize(selectedFile.size)}
                 </div>
               </div>
@@ -193,11 +209,11 @@ export default function HomePage(): React.ReactElement {
               disabled={isSubmitting}
               style={{
                 background: "none",
-                border: "1px solid var(--color-border, #cbd5e1)",
-                borderRadius: "6px",
-                padding: "6px 12px",
-                fontSize: "12px",
-                color: "var(--color-text-secondary, #64748b)",
+                border: "1px solid var(--color-border)",
+                borderRadius: "var(--radius-control)",
+                padding: "var(--spacing-1) var(--spacing-3)",
+                fontSize: "var(--font-size-xs)",
+                color: "var(--color-text-muted)",
                 cursor: "pointer",
               }}
             >
@@ -209,22 +225,23 @@ export default function HomePage(): React.ReactElement {
         {/* Analysis Configuration */}
         <div
           style={{
-            marginTop: "var(--spacing-6, 24px)",
-            padding: "var(--spacing-5, 20px)",
-            backgroundColor: "var(--color-bg-card, #ffffff)",
-            border: "1px solid var(--color-border, #e2e8f0)",
-            borderRadius: "var(--radius-lg, 12px)",
+            marginTop: "var(--spacing-6)",
+            padding: "var(--spacing-6)",
+            backgroundColor: "var(--color-bg-card)",
+            border: "1px solid var(--color-border)",
+            borderRadius: "var(--radius-card)",
+            boxShadow: "var(--shadow-card)",
           }}
         >
-          <div style={{ marginBottom: "var(--spacing-4, 16px)" }}>
+          <div style={{ marginBottom: "var(--spacing-5)" }}>
             <label
               htmlFor="field-select"
               style={{
                 display: "block",
-                fontWeight: 600,
-                fontSize: "14px",
-                marginBottom: "6px",
-                color: "var(--color-text-primary, #1e293b)",
+                fontWeight: "var(--font-weight-semibold)",
+                fontSize: "var(--font-size-sm)",
+                marginBottom: "var(--spacing-2)",
+                color: "var(--color-text)",
               }}
             >
               Academic Discipline / Domain:
@@ -236,18 +253,18 @@ export default function HomePage(): React.ReactElement {
               disabled={isSubmitting}
               style={{
                 width: "100%",
-                padding: "8px 12px",
-                borderRadius: "6px",
-                border: "1px solid var(--color-border, #cbd5e1)",
-                backgroundColor: "#ffffff",
-                fontSize: "14px",
-                color: "var(--color-text-primary, #1e293b)",
+                padding: "var(--spacing-2) var(--spacing-3)",
+                borderRadius: "var(--radius-control)",
+                border: "1px solid var(--color-border)",
+                backgroundColor: "var(--color-bg-card)",
+                fontSize: "var(--font-size-sm)",
+                color: "var(--color-text)",
               }}
             >
               <option value="cs_eng">Computer Science &amp; Engineering (Model Calibrated Domain)</option>
               <option value="other">Other Academic Field (Confidence Adjustment Applied)</option>
             </select>
-            <div style={{ fontSize: "12px", color: "var(--color-text-secondary, #64748b)", marginTop: "4px" }}>
+            <div style={{ fontSize: "var(--font-size-xs)", color: "var(--color-text-muted)", marginTop: "var(--spacing-1)" }}>
               Primary detector ensemble was trained and calibrated on arXiv English CS &amp; engineering papers.
             </div>
           </div>
@@ -257,10 +274,10 @@ export default function HomePage(): React.ReactElement {
               htmlFor="disclosure-input"
               style={{
                 display: "block",
-                fontWeight: 600,
-                fontSize: "14px",
-                marginBottom: "6px",
-                color: "var(--color-text-primary, #1e293b)",
+                fontWeight: "var(--font-weight-semibold)",
+                fontSize: "var(--font-size-sm)",
+                marginBottom: "var(--spacing-2)",
+                color: "var(--color-text)",
               }}
             >
               Author AI Disclosure Statement (Optional):
@@ -274,10 +291,12 @@ export default function HomePage(): React.ReactElement {
               disabled={isSubmitting}
               style={{
                 width: "100%",
-                padding: "8px 12px",
-                borderRadius: "6px",
-                border: "1px solid var(--color-border, #cbd5e1)",
-                fontSize: "14px",
+                padding: "var(--spacing-2) var(--spacing-3)",
+                borderRadius: "var(--radius-control)",
+                border: "1px solid var(--color-border)",
+                backgroundColor: "var(--color-bg-card)",
+                fontSize: "var(--font-size-sm)",
+                color: "var(--color-text)",
                 fontFamily: "inherit",
                 resize: "vertical",
                 boxSizing: "border-box",
@@ -292,13 +311,13 @@ export default function HomePage(): React.ReactElement {
             role="alert"
             data-testid="submit-error"
             style={{
-              marginTop: "var(--spacing-4, 16px)",
-              padding: "12px 16px",
-              backgroundColor: "rgba(220, 38, 38, 0.08)",
-              border: "1px solid rgba(220, 38, 38, 0.3)",
-              borderRadius: "8px",
-              color: "#b91c1c",
-              fontSize: "14px",
+              marginTop: "var(--spacing-4)",
+              padding: "var(--spacing-3) var(--spacing-4)",
+              backgroundColor: "var(--color-amber-bg)",
+              border: "1px solid var(--color-amber-border)",
+              borderRadius: "var(--radius-control)",
+              color: "var(--color-amber-text)",
+              fontSize: "var(--font-size-sm)",
             }}
           >
             {submitError}
@@ -306,22 +325,22 @@ export default function HomePage(): React.ReactElement {
         )}
 
         {/* Submit Button */}
-        <div style={{ marginTop: "var(--spacing-6, 24px)", textAlign: "center" }}>
+        <div style={{ marginTop: "var(--spacing-6)", textAlign: "center" }}>
           <button
             type="submit"
             data-testid="upload-submit-button"
             disabled={!selectedFile || isSubmitting}
             style={{
-              padding: "12px 32px",
-              fontSize: "16px",
-              fontWeight: 600,
-              backgroundColor: !selectedFile || isSubmitting ? "#94a3b8" : "var(--color-primary, #2563eb)",
-              color: "#ffffff",
-              border: "none",
-              borderRadius: "8px",
+              padding: "var(--spacing-3) var(--spacing-8)",
+              fontSize: "var(--font-size-base)",
+              fontWeight: "var(--font-weight-semibold)",
+              backgroundColor: !selectedFile || isSubmitting ? "var(--color-surface)" : "var(--color-primary)",
+              color: !selectedFile || isSubmitting ? "var(--color-text-muted)" : "var(--color-text-on-dark)",
+              border: `1px solid ${!selectedFile || isSubmitting ? "var(--color-border)" : "var(--color-primary)"}`,
+              borderRadius: "var(--radius-control)",
               cursor: !selectedFile || isSubmitting ? "not-allowed" : "pointer",
               transition: "background-color 0.2s",
-              boxShadow: "0 2px 4px rgba(0,0,0,0.1)",
+              boxShadow: "var(--shadow-card)",
             }}
           >
             {isSubmitting ? "Uploading & Initializing Analysis..." : "Start Forensic Analysis"}
